@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { BOOKS, type YearBook } from '@/data/books'
 import { BookshelfScene, type BookItem } from './components/BookshelfScene'
 
@@ -23,6 +23,30 @@ const PALETTES = [
 
 const BG = '#1c1714'
 const SERIF = "'EB Garamond', Georgia, 'Times New Roman', serif"
+
+function useDominantColor(src: string | undefined): string | null {
+  const [color, setColor] = useState<string | null>(null)
+  useEffect(() => {
+    if (!src) { setColor(null); return }
+    const img = new Image()
+    img.onload = () => {
+      const cvs = document.createElement('canvas')
+      cvs.width = 40; cvs.height = 60
+      const ctx = cvs.getContext('2d')!
+      ctx.drawImage(img, 0, 0, 40, 60)
+      const data = ctx.getImageData(0, 0, 40, 60).data
+      let r = 0, g = 0, b = 0, n = 0
+      for (let i = 0; i < data.length; i += 4) {
+        r += data[i]; g += data[i + 1]; b += data[i + 2]; n++
+      }
+      // 어둡게 처리해 텍스트 가독성 확보
+      const f = 0.32
+      setColor(`rgb(${Math.round(r / n * f)},${Math.round(g / n * f)},${Math.round(b / n * f)})`)
+    }
+    img.src = src
+  }, [src])
+  return color
+}
 
 type Palette = typeof PALETTES[0]
 
@@ -73,6 +97,8 @@ export default function Page() {
   const selectedIdx = selectedId ? BOOKS.findIndex(b => b.id === selectedId) : -1
   const selectedBook = selectedIdx >= 0 ? BOOKS[selectedIdx] : null
   const selectedPalette = selectedIdx >= 0 ? PALETTES[selectedIdx % PALETTES.length] : null
+  const selectedCoverSrc = selectedIdx >= 0 ? SCENE_BOOKS[selectedIdx].cover : undefined
+  const dominantColor = useDominantColor(selectedCoverSrc)
 
   function handleSelect(book: BookItem) {
     setSelectedId(prev => prev === book.id ? null : book.id)
@@ -200,7 +226,7 @@ export default function Page() {
         transform: selectedBook ? 'translateX(0)' : 'translateX(100%)',
         transition: 'transform 0.55s cubic-bezier(0.16, 1, 0.3, 1)',
         pointerEvents: selectedBook ? 'auto' : 'none',
-        background: selectedPalette ? `${selectedPalette.face}f0` : '#1c1714f0',
+        background: dominantColor ?? (selectedPalette ? `${selectedPalette.face}f0` : '#1c1714f0'),
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
         borderLeft: `1px solid ${selectedPalette?.text ?? '#c8b89a'}1a`,
@@ -209,7 +235,7 @@ export default function Page() {
         flexDirection: 'column',
         justifyContent: 'center',
         padding: '10vh 44px',
-        color: selectedPalette?.text ?? '#c8b89a',
+        color: dominantColor ? '#e8dfc8' : (selectedPalette?.text ?? '#c8b89a'),
         fontFamily: SERIF,
         WebkitFontSmoothing: 'antialiased',
       }}>
