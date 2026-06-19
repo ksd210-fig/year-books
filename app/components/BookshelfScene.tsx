@@ -1,6 +1,6 @@
 'use client'
 
-import React, { Suspense, useRef, useMemo, useState } from 'react'
+import React, { Suspense, useRef, useMemo, useState, useEffect } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment, ScrollControls, useScroll, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
@@ -44,7 +44,6 @@ function bookDims(book: BookItem) {
   return { w, h, d }
 }
 
-const GAP = 1.3
 const BOOK_GAP = 0.75  // 책 표면 간 일정 시각적 간격 (Three.js units)
 
 const LOOK_AT = new THREE.Vector3(0, -0.2, 0)
@@ -143,7 +142,6 @@ function Book({
     return t
   }, [book.coverColor, book.textColor, book.titleKo, book.author, book.year, W, D])
 
-  const { useEffect } = require('react')
   useEffect(() => {
     if (!group.current) return
     group.current.rotation.x = Math.PI / 2
@@ -252,7 +250,6 @@ function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef }: {
     return offsets
   }, [books])
 
-  const { useEffect } = require('react')
   useEffect(() => { onScrollEl?.(scroll.el) }, [scroll.el, onScrollEl])
 
   useFrame(() => {
