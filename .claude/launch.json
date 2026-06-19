@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "year-books",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "/Users/kusudam/Documents/[Claude] Fig.1/project-year-books",
+      "port": 3337
+    }
+  ]
+}

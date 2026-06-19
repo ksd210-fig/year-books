@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  background: #1c1714;
+  color: #c8b89a;
+  font-family: 'EB Garamond', Georgia, 'Times New Roman', serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar { width: 0; }
+
+/* Book detail responsive layout */
+.book-detail-columns {
+  display: flex;
+  min-height: 100vh;
+  padding: 0 5vw 10vh 8vw;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.book-detail-left {
+  flex: 0 0 55%;
+  display: flex;
+  padding-top: 30vh;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.book-detail-right {
+  flex: 1;
+  min-width: 0;
+  padding-top: 20vh;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+@media (max-width: 767px) {
+  .book-detail-columns {
+    flex-direction: column;
+    padding: 80px 6vw 10vh;
+  }
+  .book-detail-left {
+    flex: none;
+    padding-top: 6vh;
+    justify-content: flex-start;
+    height: auto;
+  }
+  .book-detail-right {
+    padding-top: 6vh;
+  }
+}
+
+/* PressIntro panel — bottom on mobile, fixed left on desktop (v0 clone pattern) */
+.press-intro-panel {
+  /* mobile: bottom-left strip */
+  padding: 0 24px 32px;
+  justify-content: flex-end;
+}
+
+@media (min-width: 768px) {
+  .press-intro-panel {
+    /* desktop: fixed left panel like PressIntro in v0 clone */
+    top: 0;
+    right: auto;
+    width: 34rem;
+    justify-content: center;
+    padding: 0 40px;
+    padding-bottom: 0;
+  }
+}
+
+/* Praise section — 3-col grid on desktop, single col mobile */
+.praise-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+@media (min-width: 900px) {
+  .praise-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4vw;
+  }
+}
