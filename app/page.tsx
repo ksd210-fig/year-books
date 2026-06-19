@@ -129,7 +129,7 @@ export default function Page() {
           <div style={{
             fontFamily: SERIF, fontWeight: 600, fontStyle: 'italic',
             fontSize: '1rem',
-            color: selectedBook ? `${selectedPalette!.text}80` : '#7a6a54',
+            color: '#ffffff',
             letterSpacing: '0.32px', lineHeight: 1.3,
             transition: 'color 0.4s',
           }}>

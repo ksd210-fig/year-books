@@ -45,6 +45,7 @@ function bookDims(book: BookItem) {
 }
 
 const GAP = 1.3
+const BOOK_GAP = 0.75  // 책 표면 간 일정 시각적 간격 (Three.js units)
 
 const LOOK_AT = new THREE.Vector3(0, -0.2, 0)
 function CameraSetup({ targetYRef }: { targetYRef: React.MutableRefObject<number> }) {
@@ -157,14 +158,12 @@ function Book({
     const isBelow = selectedIndex !== null && index > selectedIndex
 
     if (isSelected) {
-      // rotation.x = PI/2: +Y(커버)가 카메라 정면으로
-      // rotation.y = 0.2: 책등 바인딩(-X)이 왼쪽에서 살짝 보임
       group.current.rotation.x += (Math.PI / 2 - group.current.rotation.x) * 0.07
-      group.current.rotation.y += (Math.PI * 10 / 180 - group.current.rotation.y) * 0.07
-      group.current.rotation.z += (Math.PI * 20 / 180 - group.current.rotation.z) * 0.07
-      group.current.position.x += (-1.6 - group.current.position.x) * 0.07
+      group.current.rotation.y += (0 - group.current.rotation.y) * 0.07
+      group.current.rotation.z += (0 - group.current.rotation.z) * 0.07
+      group.current.position.x += (-2.0 - group.current.position.x) * 0.07
       group.current.position.y += (0 - group.current.position.y) * 0.07
-      group.current.position.z += (4.0 - group.current.position.z) * 0.07
+      group.current.position.z += (1.5 - group.current.position.z) * 0.07
     } else if (isAbove) {
       group.current.rotation.x += (0 - group.current.rotation.x) * 0.1
       group.current.rotation.y += (0 - group.current.rotation.y) * 0.1
@@ -241,19 +240,30 @@ function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef }: {
   const scroll = useScroll()
   const selectedIndex = selectedId ? books.findIndex(b => b.id === selectedId) : null
 
+  // 각 책의 실제 두께를 반영한 누적 Y 오프셋
+  // 시각적 공백 = (book[i] 아래면) - (book[i+1] 위면) = BOOK_GAP 으로 일정하게 유지
+  // → yOffsets[i+1] = yOffsets[i] - H[i]/2 - H[i+1]/2 - BOOK_GAP
+  const yOffsets = useMemo(() => {
+    const dims = books.map(b => bookDims(b).h)
+    const offsets: number[] = [0]
+    for (let i = 0; i < books.length - 1; i++) {
+      offsets.push(offsets[i] - dims[i] / 2 - dims[i + 1] / 2 - BOOK_GAP)
+    }
+    return offsets
+  }, [books])
+
   const { useEffect } = require('react')
   useEffect(() => { onScrollEl?.(scroll.el) }, [scroll.el, onScrollEl])
 
   useFrame(() => {
     if (!group.current) return
     if (selectedId && selectedIndex !== null) {
-      // 선택된 책의 월드 Y를 카메라 타겟으로 전달
-      const bookWorldY = group.current.position.y + (-selectedIndex * GAP) * 0.9
+      const bookWorldY = group.current.position.y + yOffsets[selectedIndex] * 0.9
       targetYRef.current = bookWorldY
       return
     }
-    targetYRef.current = 1.5  // 기본 카메라 Y
-    const travel = (books.length - 1) * GAP
+    targetYRef.current = 1.5
+    const travel = -yOffsets[books.length - 1]
     const targetY = scroll.offset * travel
     group.current.position.y += (targetY - group.current.position.y) * 0.2
   })
@@ -263,7 +273,7 @@ function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef }: {
       {books.map((book, i) => (
         <group
           key={book.id}
-          position={[0, -i * GAP, 0]}
+          position={[0, yOffsets[i], 0]}
           rotation={[0, (i % 2 === 0 ? 1 : -1) * 0.02, 0]}
         >
           <Book
