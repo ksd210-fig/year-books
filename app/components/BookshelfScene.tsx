@@ -34,17 +34,17 @@ export interface BookItem {
 
 const MM_SCALE = 4.5 / 190  // mm → Three.js units
 const DEFAULT_W = 3.0
-const DEFAULT_H = 0.55  // 두께 (고정)
+const DEFAULT_H = 0.55
 const DEFAULT_D = 4.5
 
-function bookDims(book: BookItem) {
+export function bookDims(book: BookItem) {
   const w = book.mmW ? +(book.mmW * MM_SCALE).toFixed(3) : DEFAULT_W
   const d = book.mmH ? +(book.mmH * MM_SCALE).toFixed(3) : DEFAULT_D
   const h = book.mmD ? +(book.mmD * MM_SCALE).toFixed(3) : DEFAULT_H
   return { w, h, d }
 }
 
-const BOOK_GAP = 0.75  // 책 표면 간 일정 시각적 간격 (Three.js units)
+export const BOOK_GAP = 0.75  // 책 표면 간 일정 시각적 간격 (Three.js units)
 
 const LOOK_AT = new THREE.Vector3(0, -0.2, 0)
 function CameraSetup({ targetYRef }: { targetYRef: React.MutableRefObject<number> }) {

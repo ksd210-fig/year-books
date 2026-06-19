@@ -2,9 +2,10 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { BOOKS, type YearBook } from '@/data/books'
-import { BookshelfScene, type BookItem } from './components/BookshelfScene'
+import { BookshelfScene, bookDims, BOOK_GAP, type BookItem } from './components/BookshelfScene'
 
-// 팔레트: 책마다 고유 색상 (v0 클론의 book.coverColor 역할)
+// 팔레트: 3D씬 전용 색상 (face/edge → 캔버스 텍스처·엣지 재질, text → 캔버스 텍스트)
+// 상세 패널 배경색은 표지 이미지에서 추출(useDominantColor)하므로 face는 패널에 미사용
 const PALETTES = [
   { face: '#6E665B', edge: '#4e463b', text: '#DFC78E' },
   { face: '#0d121f', edge: '#060810', text: '#D0D1D4' },
@@ -89,6 +90,17 @@ const SCENE_BOOKS: BookItem[] = BOOKS.map((b, i) => {
 
 const PAGES = BOOKS.length * 0.4
 
+// 사이드바 scrollToBook에서 두께별 정확한 스크롤 위치 계산용
+// Stack의 yOffsets와 동일한 공식: yOffsets[i+1] = yOffsets[i] - H[i]/2 - H[i+1]/2 - BOOK_GAP
+const SCENE_Y_OFFSETS = (() => {
+  const dims = SCENE_BOOKS.map(b => bookDims(b).h)
+  const offsets = [0]
+  for (let i = 0; i < SCENE_BOOKS.length - 1; i++) {
+    offsets.push(offsets[i] - dims[i] / 2 - dims[i + 1] / 2 - BOOK_GAP)
+  }
+  return offsets
+})()
+
 export default function Page() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [hoveredAnchor, setHoveredAnchor] = useState<number | null>(null)
@@ -111,8 +123,10 @@ export default function Page() {
   function scrollToBook(index: number) {
     const el = scrollElRef.current
     if (!el) return
-    const target = (index / (BOOKS.length - 1)) * (PAGES - 1) * window.innerHeight
-    el.scrollTo({ top: target, behavior: 'smooth' })
+    // scroll.offset = yOffsets[i] / yOffsets[last] → 두께를 반영한 정확한 비율
+    const last = SCENE_Y_OFFSETS[SCENE_Y_OFFSETS.length - 1]
+    const scrollFraction = index === 0 ? 0 : SCENE_Y_OFFSETS[index] / last
+    el.scrollTo({ top: scrollFraction * (PAGES - 1) * window.innerHeight, behavior: 'smooth' })
   }
 
   return (
