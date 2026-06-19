@@ -302,15 +302,32 @@ export function BookshelfScene({ books, onSelect, onScrollEl, selectedId }: {
     >
       <color attach="background" args={['#1c1714']} />
       <CameraSetup targetYRef={targetYRef} />
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[3, 6, 8]} intensity={2.2} castShadow />
-      <directionalLight position={[-2, 2, 5]} intensity={0.5} color="#caa05a" />
-      <directionalLight position={[0, 2, 6]} intensity={0.35} />
+      {/* 주광: 우상단에서 내려오는 강한 따뜻한 빛 — 책 위면과 척등에 하이라이트 */}
+      <directionalLight
+        position={[4, 10, 7]}
+        intensity={2.8}
+        color="#fff5e8"
+        castShadow
+        shadow-mapSize={[2048, 2048]}
+        shadow-camera-near={0.5}
+        shadow-camera-far={60}
+        shadow-camera-left={-8}
+        shadow-camera-right={8}
+        shadow-camera-top={20}
+        shadow-camera-bottom={-20}
+        shadow-bias={-0.0005}
+      />
+      {/* 보조광: 좌측에서 약한 차가운 빛 — 그림자 영역 완전한 암흑 방지 */}
+      <directionalLight position={[-4, 3, 6]} intensity={0.4} color="#c8d8f0" />
+      {/* 림라이트: 카메라 반대편 후면에서 테두리 분리 */}
+      <directionalLight position={[0, -2, -8]} intensity={0.6} color="#4a3820" />
+      {/* 환경광: 낮게 유지해 그림자 대비 살림 */}
+      <ambientLight intensity={0.25} />
       <Suspense fallback={null}>
         <ScrollControls pages={books.length * 0.4} damping={0.005}>
           <Stack books={books} onSelect={onSelect} onScrollEl={onScrollEl} selectedId={selectedId} targetYRef={targetYRef} />
         </ScrollControls>
-        <Environment preset="apartment" />
+        <Environment preset="apartment" environmentIntensity={0.4} />
       </Suspense>
     </Canvas>
   )
