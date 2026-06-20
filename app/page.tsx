@@ -197,7 +197,13 @@ export default function Page() {
           return (
             <button
               key={book.id}
-              onClick={() => scrollToBook(i)}
+              onClick={() => {
+                if (selectedId) {
+                  setSelectedId(BOOKS[i].id)
+                } else {
+                  scrollToBook(i)
+                }
+              }}
               onMouseEnter={() => setHoveredAnchor(i)}
               onMouseLeave={() => setHoveredAnchor(null)}
               style={{

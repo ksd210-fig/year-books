@@ -69,25 +69,28 @@ function CameraSetup({ targetYRef }: { targetYRef: React.MutableRefObject<number
     const camera = cameraRef.current
     if (!camera) return
     camera.position.y += (targetYRef.current - camera.position.y) * 0.06
-    lookAtRef.current.y += (targetYRef.current - lookAtRef.current.y) * 0.06
+    camera.position.x += (0 - camera.position.x) * 0.06
+    camera.position.z += (14 - camera.position.z) * 0.06
+    // lookAt은 카메라보다 2.6 아래를 고정 추적 → 항상 약 10.5° 내려다봄
+    lookAtRef.current.y += ((targetYRef.current - 2.6) - lookAtRef.current.y) * 0.06
     camera.lookAt(lookAtRef.current)
   })
 
-  return <PerspectiveCamera ref={cameraRef} makeDefault position={[0, 1.5, 15]} fov={28} />
+  return <PerspectiveCamera ref={cameraRef} makeDefault position={[0, 2.4, 14]} fov={30} />
 }
 
 function ImageCoverMaterial({
   src,
   attach,
   rotation,
-  repeat,
-  offset,
+  roughness = 0.42,
+  envMapIntensity = 0.32,
 }: {
   src: string
   attach: string
   rotation?: number
-  repeat?: [number, number]
-  offset?: [number, number]
+  roughness?: number
+  envMapIntensity?: number
 }) {
   const sourceTex = useTexture(src)
   const { gl } = useThree()
@@ -101,14 +104,70 @@ function ImageCoverMaterial({
       configuredTex.rotation = rotation
       configuredTex.center.set(0.5, 0.5)
     }
-    if (repeat) configuredTex.repeat.set(repeat[0], repeat[1])
-    if (offset) configuredTex.offset.set(offset[0], offset[1])
     return configuredTex
-  }, [gl, offset, repeat, rotation, sourceTex])
+  }, [gl, rotation, sourceTex])
 
   useEffect(() => () => tex.dispose(), [tex])
 
-  return <meshStandardMaterial attach={attach} map={tex} roughness={0.5} metalness={0} />
+  return <meshStandardMaterial attach={attach} map={tex} roughness={roughness} metalness={0} envMapIntensity={envMapIntensity} />
+}
+
+function CoverStripMaterial({
+  src,
+  attach,
+  edge,
+  roughness = 0.44,
+  envMapIntensity = 0.24,
+  polygonOffset,
+}: {
+  src: string
+  attach: string
+  edge: 'left' | 'right'
+  roughness?: number
+  envMapIntensity?: number
+  polygonOffset?: number
+}) {
+  const sourceTex = useTexture(src)
+  const { gl } = useThree()
+
+  const tex = useMemo(() => {
+    const img = sourceTex.image as HTMLImageElement | HTMLCanvasElement | ImageBitmap | undefined
+    const sourceW = img?.width ?? 1
+    const sourceH = img?.height ?? 1
+    const stripW = Math.max(8, Math.round(sourceW * 0.055))
+    const pad = 3
+    const cvs = document.createElement('canvas')
+    cvs.width = stripW + pad * 2
+    cvs.height = sourceH
+    const ctx = cvs.getContext('2d')!
+    const sx = edge === 'left' ? Math.max(0, Math.round(sourceW * 0.018)) : Math.max(0, sourceW - stripW - Math.round(sourceW * 0.018))
+
+    ctx.drawImage(img as CanvasImageSource, sx, 0, stripW, sourceH, pad, 0, stripW, sourceH)
+    ctx.drawImage(img as CanvasImageSource, sx, 0, 1, sourceH, 0, 0, pad, sourceH)
+    ctx.drawImage(img as CanvasImageSource, sx + stripW - 1, 0, 1, sourceH, pad + stripW, 0, pad, sourceH)
+
+    const stripTex = new THREE.CanvasTexture(cvs)
+    stripTex.anisotropy = gl.capabilities.getMaxAnisotropy()
+    stripTex.minFilter = THREE.LinearFilter
+    stripTex.magFilter = THREE.LinearFilter
+    stripTex.needsUpdate = true
+    return stripTex
+  }, [edge, gl, sourceTex])
+
+  useEffect(() => () => tex.dispose(), [tex])
+
+  return (
+    <meshStandardMaterial
+      attach={attach}
+      map={tex}
+      roughness={roughness}
+      metalness={0}
+      envMapIntensity={envMapIntensity}
+      polygonOffset={polygonOffset !== undefined}
+      polygonOffsetFactor={polygonOffset ?? 0}
+      polygonOffsetUnits={polygonOffset ?? 0}
+    />
+  )
 }
 
 
@@ -131,8 +190,6 @@ function Book({
   const coverD = D + 0.045
   const pageW = W - 0.08
   const pageD = D - 0.055
-  const spineT = boardT
-  const hingeX = -coverW / 2 + spineT + 0.022
   const pageX = 0.04
 
   // 드래그 회전 상태
@@ -258,20 +315,22 @@ function Book({
       const targetRy = Math.PI * 10 / 180 + dragOffset.current.y
       group.current.rotation.x += (targetRx - group.current.rotation.x) * lerpF
       group.current.rotation.y += (targetRy - group.current.rotation.y) * lerpF
-      group.current.rotation.z += (-Math.PI / 9 - group.current.rotation.z) * 0.07
-      group.current.position.x += (-2.0 - group.current.position.x) * 0.07
+      group.current.rotation.z += (-Math.PI / 10 - group.current.rotation.z) * 0.07
+      group.current.position.x += (-1.7 - group.current.position.x) * 0.07
       group.current.position.y += (0 - group.current.position.y) * 0.07
-      group.current.position.z += (1.5 - group.current.position.z) * 0.07
+      group.current.position.z += (0 - group.current.position.z) * 0.07
     } else if (isAbove) {
-      group.current.rotation.x += (0 - group.current.rotation.x) * 0.1
-      group.current.rotation.y += (0 - group.current.rotation.y) * 0.1
-      group.current.position.x += (0 - group.current.position.x) * 0.1
+      group.current.rotation.x += (Math.PI / 2 - group.current.rotation.x) * 0.1
+      group.current.rotation.y += (Math.PI / 2 - group.current.rotation.y) * 0.1
+      group.current.rotation.z += (-Math.PI / 2 - group.current.rotation.z) * 0.1
+      group.current.position.x += (-1.7 - group.current.position.x) * 0.1
       group.current.position.y += (14 - group.current.position.y) * 0.08
       group.current.position.z += (0 - group.current.position.z) * 0.1
     } else if (isBelow) {
-      group.current.rotation.x += (0 - group.current.rotation.x) * 0.1
-      group.current.rotation.y += (0 - group.current.rotation.y) * 0.1
-      group.current.position.x += (0 - group.current.position.x) * 0.1
+      group.current.rotation.x += (Math.PI / 2 - group.current.rotation.x) * 0.1
+      group.current.rotation.y += (Math.PI / 2 - group.current.rotation.y) * 0.1
+      group.current.rotation.z += (-Math.PI / 2 - group.current.rotation.z) * 0.1
+      group.current.position.x += (-1.7 - group.current.position.x) * 0.1
       group.current.position.y += (-14 - group.current.position.y) * 0.08
       group.current.position.z += (0 - group.current.position.z) * 0.1
     } else {
@@ -290,15 +349,12 @@ function Book({
   const edge = new THREE.Color(book.edgeColor)
   const coverSide = new THREE.Color(book.coverColor)
   const pageEdge = new THREE.Color('#d8d0bd')
-  const pageShadow = new THREE.Color('#a99f8f')
   const boardSide = book.cover ? new THREE.Color('#d7d0c1') : coverSide.clone().lerp(edge, 0.18)
   const boardShadow = book.cover ? new THREE.Color('#8d8577') : edge.clone().multiplyScalar(0.62)
-  const spineSide = boardSide.clone().lerp(boardShadow, 0.18)
-  const hingeColor = book.cover ? boardShadow.clone().multiplyScalar(0.9) : edge.clone().multiplyScalar(0.55)
-  const coverGeometry = useMemo(() => new RoundedBoxGeometry(coverW, boardT, coverD, 4, 0.028), [coverW, boardT, coverD])
-  const pageGeometry = useMemo(() => new RoundedBoxGeometry(pageW, pageH, pageD, 3, 0.012), [pageW, pageH, pageD])
-  const spineRadius = Math.min(0.018, spineT * 0.45)
-  const spineGeometry = useMemo(() => new RoundedBoxGeometry(spineT, H, coverD, 4, spineRadius), [spineT, H, coverD, spineRadius])
+  const coverRadius = Math.min(0.008, H * 0.06)
+  const pageRadius = Math.min(0.008, pageH * 0.08)
+  const coverGeometry = useMemo(() => new RoundedBoxGeometry(coverW, H, coverD, 7, coverRadius), [coverW, H, coverD, coverRadius])
+  const pageGeometry = useMemo(() => new RoundedBoxGeometry(pageW, pageH, pageD, 5, pageRadius), [pageW, pageH, pageD, pageRadius])
 
 
   return (
@@ -326,69 +382,31 @@ function Book({
         hasDragged.current = false
       }}
     >
+      {/* Page block — cover 안에 완전히 내포됨 */}
       <mesh castShadow receiveShadow position={[pageX, 0, 0]}>
         <primitive object={pageGeometry} attach="geometry" />
-        <meshStandardMaterial attach="material-0" color={pageShadow} map={getPageTex()} roughness={0.96} metalness={0} />
-        <meshStandardMaterial attach="material-1" color={boardShadow} roughness={0.9} metalness={0} />
-        <meshStandardMaterial attach="material-2" color={pageEdge} roughness={0.98} metalness={0} />
-        <meshStandardMaterial attach="material-3" color={pageEdge.clone().multiplyScalar(0.9)} roughness={0.98} metalness={0} />
-        <meshStandardMaterial attach="material-4" color={pageEdge} map={getPageTex()} roughness={0.96} metalness={0} />
-        <meshStandardMaterial attach="material-5" color={pageEdge} map={getPageTex()} roughness={0.96} metalness={0} />
+        <meshStandardMaterial color="#bfb8a3" roughness={0.99} metalness={0} envMapIntensity={0.04} />
       </mesh>
 
-      <mesh castShadow receiveShadow position={[0, pageH / 2 + boardT / 2, 0]}>
+      {/* 단일 통합 커버 — material-0:fore-edge / 1:spine / 2:앞표지 / 3:뒤표지 / 4:head / 5:tail */}
+      <mesh castShadow receiveShadow position={[0, 0, 0]}>
         <primitive object={coverGeometry} attach="geometry" />
-        <meshStandardMaterial attach="material-0" color={boardShadow} roughness={0.62} metalness={0} />
-        <meshStandardMaterial attach="material-1" color={boardSide} roughness={0.58} metalness={0} />
-        {book.cover
-          ? <ImageCoverMaterial attach="material-2" src={book.cover} />
-          : <meshStandardMaterial attach="material-2" map={coverTex} roughness={0.42} metalness={0.01} />}
-        <meshStandardMaterial attach="material-3" color={boardShadow.clone().multiplyScalar(0.82)} roughness={0.7} metalness={0} />
-        <meshStandardMaterial attach="material-4" color={boardSide} roughness={0.6} metalness={0} />
-        <meshStandardMaterial attach="material-5" color={boardShadow} roughness={0.66} metalness={0} />
-      </mesh>
-
-      <mesh castShadow receiveShadow position={[0, -pageH / 2 - boardT / 2, 0]}>
-        <primitive object={coverGeometry} attach="geometry" />
-        <meshStandardMaterial attach="material-0" color={boardShadow} roughness={0.68} metalness={0} />
-        <meshStandardMaterial attach="material-1" color={boardSide.clone().multiplyScalar(0.92)} roughness={0.66} metalness={0} />
-        <meshStandardMaterial attach="material-2" color={boardShadow.clone().multiplyScalar(0.82)} roughness={0.76} metalness={0} />
-        {book.back
-          ? <ImageCoverMaterial attach="material-3" src={book.back} rotation={Math.PI} />
-          : <meshStandardMaterial attach="material-3" color={boardShadow.clone().multiplyScalar(0.7)} roughness={0.72} metalness={0} />}
-        <meshStandardMaterial attach="material-4" color={boardSide.clone().multiplyScalar(0.95)} roughness={0.66} metalness={0} />
-        <meshStandardMaterial attach="material-5" color={boardShadow.clone().multiplyScalar(0.9)} roughness={0.72} metalness={0} />
-      </mesh>
-
-      <mesh castShadow receiveShadow position={[-coverW / 2 + spineT / 2, 0, 0]}>
-        <primitive object={spineGeometry} attach="geometry" />
-        <meshStandardMaterial attach="material-0" color={spineSide} roughness={0.64} metalness={0} />
+        <meshStandardMaterial attach="material-0" color={pageEdge} map={getPageTex()} roughness={0.98} metalness={0} envMapIntensity={0.06} transparent opacity={0.9} />
         {book.spine
-          ? <ImageCoverMaterial attach="material-1" src={book.spine} rotation={Math.PI / 2} />
-          : <meshStandardMaterial attach="material-1" map={spineTex} roughness={0.52} metalness={0} />}
+          ? <ImageCoverMaterial attach="material-1" src={book.spine} rotation={Math.PI / 2} roughness={0.4} envMapIntensity={0.32} />
+          : <meshStandardMaterial attach="material-1" map={spineTex} roughness={0.46} metalness={0} envMapIntensity={0.28} />}
         {book.cover
-          ? <ImageCoverMaterial attach="material-2" src={book.cover} repeat={[0.08, 1]} offset={[0, 0]} />
-          : <meshStandardMaterial attach="material-2" color={spineSide.clone().multiplyScalar(1.02)} roughness={0.58} metalness={0} />}
+          ? <ImageCoverMaterial attach="material-2" src={book.cover} roughness={0.38} envMapIntensity={0.36} />
+          : <meshStandardMaterial attach="material-2" map={coverTex} roughness={0.38} metalness={0} envMapIntensity={0.34} />}
         {book.back
-          ? <ImageCoverMaterial attach="material-3" src={book.back} repeat={[0.08, 1]} offset={[0.92, 0]} />
-          : <meshStandardMaterial attach="material-3" color={spineSide.clone().multiplyScalar(0.82)} roughness={0.66} metalness={0} />}
-        <meshStandardMaterial attach="material-4" color={spineSide.clone().multiplyScalar(0.96)} roughness={0.68} metalness={0} />
-        <meshStandardMaterial attach="material-5" color={spineSide.clone().multiplyScalar(0.86)} roughness={0.74} metalness={0} />
-      </mesh>
-
-      <mesh position={[hingeX, pageH / 2 + boardT + 0.005, 0]}>
-        <boxGeometry args={[0.009, 0.004, D - 0.1]} />
-        <meshStandardMaterial color={hingeColor} roughness={0.85} metalness={0} transparent opacity={0.12} />
-      </mesh>
-
-      <mesh position={[hingeX, -pageH / 2 - boardT - 0.005, 0]}>
-        <boxGeometry args={[0.009, 0.004, D - 0.1]} />
-        <meshStandardMaterial color={hingeColor.clone().multiplyScalar(0.8)} roughness={0.9} metalness={0} transparent opacity={0.08} />
-      </mesh>
-
-      <mesh position={[pageX + pageW / 2 + 0.004, 0, 0]}>
-        <boxGeometry args={[0.012, pageH * 0.92, pageD * 0.96]} />
-        <meshStandardMaterial color="#eee5d4" map={getPageTex()} roughness={0.98} metalness={0} />
+          ? <ImageCoverMaterial attach="material-3" src={book.back} rotation={Math.PI} roughness={0.44} envMapIntensity={0.28} />
+          : <meshStandardMaterial attach="material-3" color={boardShadow.clone().multiplyScalar(0.7)} roughness={0.74} metalness={0} envMapIntensity={0.12} />}
+        {book.cover
+          ? <CoverStripMaterial attach="material-4" src={book.cover} edge="left" roughness={0.42} envMapIntensity={0.26} />
+          : <meshStandardMaterial attach="material-4" color={boardSide} roughness={0.62} metalness={0} envMapIntensity={0.22} />}
+        {book.back
+          ? <CoverStripMaterial attach="material-5" src={book.back} edge="right" roughness={0.46} envMapIntensity={0.22} />
+          : <meshStandardMaterial attach="material-5" color={boardShadow} roughness={0.68} metalness={0} envMapIntensity={0.16} />}
       </mesh>
     </group>
   )
@@ -422,11 +440,11 @@ function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef }: {
   useFrame(() => {
     if (!group.current) return
     if (selectedId && selectedIndex !== null) {
-      const bookWorldY = group.current.position.y + yOffsets[selectedIndex] * 0.9
-      targetYRef.current = bookWorldY
+      const bookWorldY = group.current.position.y + yOffsets[selectedIndex] * 0.9  // scale=0.9 반영
+      targetYRef.current = bookWorldY + 2.6  // 카메라 2.6 위 → lookAt이 책 Y에 정확히 맞음
       return
     }
-    targetYRef.current = 1.5
+    targetYRef.current = 2.4
     const travel = -yOffsets[books.length - 1]
     const targetY = scroll.offset * travel
     group.current.position.y += (targetY - group.current.position.y) * 0.2
@@ -460,7 +478,7 @@ export function BookshelfScene({ books, onSelect, onScrollEl, selectedId }: {
   onScrollEl?: (el: HTMLElement) => void
   selectedId?: string | null
 }) {
-  const targetYRef = useRef(1.5)
+  const targetYRef = useRef(2.4)
   return (
     <Canvas
       shadows
@@ -469,19 +487,33 @@ export function BookshelfScene({ books, onSelect, onScrollEl, selectedId }: {
     >
       <color attach="background" args={['#1c1714']} />
       <CameraSetup targetYRef={targetYRef} />
-      {/* 주광: 우상단에서 내려오는 강한 따뜻한 빛 */}
-      <directionalLight position={[4, 10, 7]} intensity={2.8} color="#fff5e8" castShadow />
-      {/* 보조광: 좌측 차가운 빛 — 그림자 영역 완전한 암흑 방지 */}
-      <directionalLight position={[-4, 3, 6]} intensity={0.4} color="#c8d8f0" />
-      {/* 림라이트: 후면에서 책 테두리 분리 */}
-      <directionalLight position={[0, -2, -8]} intensity={0.6} color="#4a3820" />
-      {/* 환경광: 낮게 유지해 명암 대비 살림 */}
-      <ambientLight intensity={0.25} />
+      {/* 넓은 주광: 커버에 부드러운 satin 하이라이트를 만든다 */}
+      <directionalLight
+        position={[4.5, 8, 6.5]}
+        intensity={2.4}
+        color="#fff5e0"
+        castShadow
+        shadow-mapSize={[2048, 2048]}
+        shadow-bias={-0.00015}
+        shadow-camera-near={0.5}
+        shadow-camera-far={45}
+        shadow-camera-left={-8}
+        shadow-camera-right={8}
+        shadow-camera-top={10}
+        shadow-camera-bottom={-18}
+      />
+      {/* 정면 fill: spine 이미지를 카메라 방향에서 밝게 */}
+      <directionalLight position={[0, 3, 12]} intensity={0.7} color="#fff8f2" />
+      {/* 측면 보조광 */}
+      <directionalLight position={[-5, 4, 5]} intensity={0.4} color="#d7e2ff" />
+      {/* 아주 약한 림라이트: 어두운 배경에서 책 모서리만 분리 */}
+      <directionalLight position={[-2, -3, -7]} intensity={0.28} color="#b99362" />
+      <ambientLight intensity={0.26} />
       <Suspense fallback={null}>
         <ScrollControls pages={books.length * 0.4} damping={0.005}>
           <Stack books={books} onSelect={onSelect} onScrollEl={onScrollEl} selectedId={selectedId} targetYRef={targetYRef} />
         </ScrollControls>
-        <Environment preset="apartment" />
+        <Environment preset="apartment" environmentIntensity={0.52} />
       </Suspense>
     </Canvas>
   )
