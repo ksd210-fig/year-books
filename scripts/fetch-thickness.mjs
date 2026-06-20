@@ -41,6 +41,7 @@ const BOOKS = [
   { id: 'year-1962',       title: '1962 쿠바 미사일 위기 마이클 돕스' },
   { id: 'year-1964',       title: '프리덤 서머 1964' },
   { id: 'year-1968',       title: '1968년 저항' },
+  { id: 'year-1968-jungdaesung', title: '68혁명 상상력이 빚은 저항의 역사 정대성', itemId: '180121843' },
   { id: 'year-1975',       title: '1975 이야기 유신 언론' },
   { id: 'year-1991',       title: '1991 소련 붕괴 마이클 돕스' },
 ]

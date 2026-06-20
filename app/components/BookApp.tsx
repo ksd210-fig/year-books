@@ -265,9 +265,6 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
       }}>
         {selectedBook && selectedPalette && (
           <>
-            <div style={{ fontSize: 11, letterSpacing: '0.14em', opacity: 0.45, marginBottom: 20, textTransform: 'uppercase' }}>
-              {selectedBook.year}
-            </div>
             <div style={{
               fontSize: 'calc(18px + 0.6vw)', fontStyle: 'italic', fontWeight: 700,
               lineHeight: 1.25, marginBottom: 12,
@@ -279,24 +276,17 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
                 {selectedBook.titleEn}
               </div>
             )}
-            <div style={{ fontSize: 16, fontStyle: 'italic', opacity: 0.8, marginBottom: 24 }}>
+            <div style={{ fontSize: 16, fontStyle: 'italic', opacity: 0.8, marginBottom: 6 }}>
               {selectedBook.author}
             </div>
-            <div style={{ width: 36, height: 1, background: 'currentColor', opacity: 0.25, marginBottom: 24 }} />
-            <div style={{ fontSize: 15, lineHeight: 1.78, opacity: 0.82, marginBottom: 24 }}>
-              {selectedBook.description}
-            </div>
-            <div style={{ fontSize: 12, opacity: 0.38, letterSpacing: '0.05em', marginBottom: 28 }}>
+            <div style={{ fontSize: 12, opacity: 0.38, letterSpacing: '0.05em', marginBottom: 24 }}>
               {selectedBook.publisher}
             </div>
+            <div style={{ width: 36, height: 1, background: 'currentColor', opacity: 0.25, marginBottom: 24 }} />
+            <div style={{ fontSize: 15, lineHeight: 1.78, opacity: 0.82, marginBottom: 28 }}>
+              {selectedBook.description}
+            </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 32 }}>
-              {selectedBook.tags.map(tag => (
-                <span key={tag} style={{
-                  fontSize: 11, padding: '3px 10px',
-                  border: '1px solid currentColor',
-                  opacity: 0.45, letterSpacing: '0.04em',
-                }}>{tag}</span>
-              ))}
             </div>
             {selectedBook.buyLink && (
               <a
@@ -312,7 +302,7 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
                   cursor: 'pointer',
                 }}
               >
-                <span>알라딘에서 구매하기</span>
+                <span>구매하기</span>
                 <div style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   alignSelf: 'stretch', padding: '16px 14px',
