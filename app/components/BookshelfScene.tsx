@@ -76,7 +76,19 @@ function CameraSetup({ targetYRef }: { targetYRef: React.MutableRefObject<number
   return <PerspectiveCamera ref={cameraRef} makeDefault position={[0, 1.5, 15]} fov={28} />
 }
 
-function ImageCoverMaterial({ src, attach, rotation }: { src: string; attach: string; rotation?: number }) {
+function ImageCoverMaterial({
+  src,
+  attach,
+  rotation,
+  repeat,
+  offset,
+}: {
+  src: string
+  attach: string
+  rotation?: number
+  repeat?: [number, number]
+  offset?: [number, number]
+}) {
   const sourceTex = useTexture(src)
   const { gl } = useThree()
 
@@ -89,8 +101,10 @@ function ImageCoverMaterial({ src, attach, rotation }: { src: string; attach: st
       configuredTex.rotation = rotation
       configuredTex.center.set(0.5, 0.5)
     }
+    if (repeat) configuredTex.repeat.set(repeat[0], repeat[1])
+    if (offset) configuredTex.offset.set(offset[0], offset[1])
     return configuredTex
-  }, [gl, rotation, sourceTex])
+  }, [gl, offset, repeat, rotation, sourceTex])
 
   useEffect(() => () => tex.dispose(), [tex])
 
@@ -279,7 +293,8 @@ function Book({
   const pageShadow = new THREE.Color('#a99f8f')
   const boardSide = book.cover ? new THREE.Color('#d7d0c1') : coverSide.clone().lerp(edge, 0.18)
   const boardShadow = book.cover ? new THREE.Color('#8d8577') : edge.clone().multiplyScalar(0.62)
-  const hingeColor = book.cover ? boardShadow.clone().multiplyScalar(0.82) : edge.clone().multiplyScalar(0.55)
+  const spineSide = boardSide.clone().lerp(boardShadow, 0.18)
+  const hingeColor = book.cover ? boardShadow.clone().multiplyScalar(0.9) : edge.clone().multiplyScalar(0.55)
   const coverGeometry = useMemo(() => new RoundedBoxGeometry(coverW, boardT, coverD, 4, 0.028), [coverW, boardT, coverD])
   const pageGeometry = useMemo(() => new RoundedBoxGeometry(pageW, pageH, pageD, 3, 0.012), [pageW, pageH, pageD])
   const spineRadius = Math.min(0.018, spineT * 0.45)
@@ -347,24 +362,28 @@ function Book({
 
       <mesh castShadow receiveShadow position={[-coverW / 2 + spineT / 2, 0, 0]}>
         <primitive object={spineGeometry} attach="geometry" />
-        <meshStandardMaterial attach="material-0" color={boardSide} roughness={0.64} metalness={0} />
+        <meshStandardMaterial attach="material-0" color={spineSide} roughness={0.64} metalness={0} />
         {book.spine
           ? <ImageCoverMaterial attach="material-1" src={book.spine} rotation={Math.PI / 2} />
           : <meshStandardMaterial attach="material-1" map={spineTex} roughness={0.52} metalness={0} />}
-        <meshStandardMaterial attach="material-2" color={boardSide.clone().multiplyScalar(1.03)} roughness={0.58} metalness={0} />
-        <meshStandardMaterial attach="material-3" color={boardShadow.clone().multiplyScalar(0.9)} roughness={0.66} metalness={0} />
-        <meshStandardMaterial attach="material-4" color={boardSide.clone().multiplyScalar(0.95)} roughness={0.68} metalness={0} />
-        <meshStandardMaterial attach="material-5" color={boardShadow} roughness={0.74} metalness={0} />
+        {book.cover
+          ? <ImageCoverMaterial attach="material-2" src={book.cover} repeat={[0.08, 1]} offset={[0, 0]} />
+          : <meshStandardMaterial attach="material-2" color={spineSide.clone().multiplyScalar(1.02)} roughness={0.58} metalness={0} />}
+        {book.back
+          ? <ImageCoverMaterial attach="material-3" src={book.back} repeat={[0.08, 1]} offset={[0.92, 0]} />
+          : <meshStandardMaterial attach="material-3" color={spineSide.clone().multiplyScalar(0.82)} roughness={0.66} metalness={0} />}
+        <meshStandardMaterial attach="material-4" color={spineSide.clone().multiplyScalar(0.96)} roughness={0.68} metalness={0} />
+        <meshStandardMaterial attach="material-5" color={spineSide.clone().multiplyScalar(0.86)} roughness={0.74} metalness={0} />
       </mesh>
 
       <mesh position={[hingeX, pageH / 2 + boardT + 0.005, 0]}>
         <boxGeometry args={[0.009, 0.004, D - 0.1]} />
-        <meshStandardMaterial color={hingeColor} roughness={0.85} metalness={0} transparent opacity={0.28} />
+        <meshStandardMaterial color={hingeColor} roughness={0.85} metalness={0} transparent opacity={0.12} />
       </mesh>
 
       <mesh position={[hingeX, -pageH / 2 - boardT - 0.005, 0]}>
         <boxGeometry args={[0.009, 0.004, D - 0.1]} />
-        <meshStandardMaterial color={hingeColor.clone().multiplyScalar(0.8)} roughness={0.9} metalness={0} transparent opacity={0.18} />
+        <meshStandardMaterial color={hingeColor.clone().multiplyScalar(0.8)} roughness={0.9} metalness={0} transparent opacity={0.08} />
       </mesh>
 
       <mesh position={[pageX + pageW / 2 + 0.004, 0, 0]}>
