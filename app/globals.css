@@ -16,6 +16,61 @@ html, body {
 
 ::-webkit-scrollbar { width: 0; }
 
+.year-books-shell {
+  --year-index-display: flex;
+  --book-detail-top: 0;
+  --book-detail-right: 0;
+  --book-detail-bottom: 0;
+  --book-detail-left: auto;
+  --book-detail-width: min(400px, 40vw);
+  --book-detail-height: auto;
+  --book-detail-padding: 10vh 44px;
+  --book-detail-justify: center;
+  --book-detail-open-transform: translateX(0);
+  --book-detail-closed-transform: translateX(100%);
+}
+
+@media (max-width: 767px) {
+  .year-books-shell {
+    --year-index-display: none;
+    --book-detail-top: auto;
+    --book-detail-right: 0;
+    --book-detail-bottom: 0;
+    --book-detail-left: 0;
+    --book-detail-width: 100vw;
+    --book-detail-height: min(58vh, 520px);
+    --book-detail-padding: 28px 28px max(32px, env(safe-area-inset-bottom));
+    --book-detail-justify: flex-start;
+    --book-detail-open-transform: translateY(0);
+    --book-detail-closed-transform: translateY(100%);
+  }
+
+  .year-index {
+    display: none !important;
+  }
+
+  .book-detail-panel {
+    top: auto !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: min(58vh, 520px) !important;
+    padding: 28px 28px max(32px, env(safe-area-inset-bottom)) !important;
+    justify-content: flex-start !important;
+    border-left: 0 !important;
+    border-top: 1px solid rgba(232, 223, 200, 0.16);
+  }
+
+  .book-detail-panel[data-selected="true"] {
+    transform: translateY(0) !important;
+  }
+
+  .book-detail-panel[data-selected="false"] {
+    transform: translateY(100%) !important;
+  }
+}
+
 /* Book detail responsive layout */
 .book-detail-columns {
   display: flex;

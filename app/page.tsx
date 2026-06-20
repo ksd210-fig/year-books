@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { BOOKS, type YearBook } from '@/data/books'
+import { BOOKS } from '@/data/books'
 import { BookshelfScene, bookDims, BOOK_GAP, type BookItem } from './components/BookshelfScene'
 
 // 팔레트: 3D씬 전용 색상 (face/edge → 캔버스 텍스처·엣지 재질, text → 캔버스 텍스트)
@@ -28,9 +28,12 @@ const SERIF = "'EB Garamond', Georgia, 'Times New Roman', serif"
 function useDominantColor(src: string | undefined): string | null {
   const [color, setColor] = useState<string | null>(null)
   useEffect(() => {
-    if (!src) { setColor(null); return }
+    if (!src) return
+
+    let cancelled = false
     const img = new Image()
     img.onload = () => {
+      if (cancelled) return
       const cvs = document.createElement('canvas')
       cvs.width = 40; cvs.height = 60
       const ctx = cvs.getContext('2d')!
@@ -45,11 +48,12 @@ function useDominantColor(src: string | undefined): string | null {
       setColor(`rgb(${Math.round(r / n * f)},${Math.round(g / n * f)},${Math.round(b / n * f)})`)
     }
     img.src = src
+    return () => {
+      cancelled = true
+    }
   }, [src])
-  return color
+  return src ? color : null
 }
-
-type Palette = typeof PALETTES[0]
 
 // letslook 이미지가 있는 책 (fronts/ + backs/ 모두 존재)
 const HAS_LETSLOOK = new Set([
@@ -130,7 +134,7 @@ export default function Page() {
   }
 
   return (
-    <div style={{ position: 'relative', height: '100vh', width: '100%', overflow: 'hidden', background: BG }}>
+    <div className="year-books-shell" style={{ position: 'relative', height: '100vh', width: '100%', overflow: 'hidden', background: BG }}>
 
       {/* ── 3D 책장 씬 ── */}
       <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
@@ -179,17 +183,16 @@ export default function Page() {
       </header>
 
       {/* ── 사이드바 북 인덱스 (왼쪽) ── */}
-      <aside style={{
+      <aside className="year-index" style={{
         position: 'fixed',
         left: 24, top: '50%',
         transform: 'translateY(-50%)',
         zIndex: 50,
-        display: 'flex', flexDirection: 'column',
+        display: 'var(--year-index-display)', flexDirection: 'column',
         gap: 3, alignItems: 'flex-start',
         pointerEvents: 'auto',
       }}>
         {BOOKS.map((book, i) => {
-          const p = PALETTES[i % PALETTES.length]
           const isHovered = hoveredAnchor === i
           return (
             <button
@@ -232,12 +235,13 @@ export default function Page() {
       </aside>
 
       {/* ── 상세 슬라이드 패널 (오른쪽) ── */}
-      <div style={{
+      <div className="book-detail-panel" data-selected={selectedBook ? 'true' : 'false'} style={{
         position: 'fixed',
-        right: 0, top: 0, bottom: 0,
-        width: 'min(400px, 40vw)',
+        right: 'var(--book-detail-right)', top: 'var(--book-detail-top)', bottom: 'var(--book-detail-bottom)', left: 'var(--book-detail-left)',
+        width: 'var(--book-detail-width)',
+        height: 'var(--book-detail-height)',
         zIndex: 40,
-        transform: selectedBook ? 'translateX(0)' : 'translateX(100%)',
+        transform: selectedBook ? 'var(--book-detail-open-transform)' : 'var(--book-detail-closed-transform)',
         transition: 'transform 0.55s cubic-bezier(0.16, 1, 0.3, 1)',
         pointerEvents: selectedBook ? 'auto' : 'none',
         background: dominantColor ?? (selectedPalette ? `${selectedPalette.face}f0` : '#1c1714f0'),
@@ -247,8 +251,8 @@ export default function Page() {
         overflowY: 'auto',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center',
-        padding: '10vh 44px',
+        justifyContent: 'var(--book-detail-justify)',
+        padding: 'var(--book-detail-padding)',
         color: dominantColor ? '#e8dfc8' : (selectedPalette?.text ?? '#c8b89a'),
         fontFamily: SERIF,
         WebkitFontSmoothing: 'antialiased',

@@ -7,7 +7,9 @@
  *  3. "책 소개" 섹션 파싱
  */
 
-const TTB_KEY = 'ttbwanderwheel1036001'
+import { getAladinTtbKey } from './aladin-env.mjs'
+
+const TTB_KEY = getAladinTtbKey()
 
 const BOOKS = [
   { id: 'year-1000',       title: '세계가 처음 연결되었을 때 1000년' },

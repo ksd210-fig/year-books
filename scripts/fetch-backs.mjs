@@ -3,9 +3,10 @@ import path from 'path'
 import https from 'https'
 import http from 'http'
 import { fileURLToPath } from 'url'
+import { getAladinTtbKey } from './aladin-env.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const TTB_KEY = 'ttbwanderwheel1036001'
+const TTB_KEY = getAladinTtbKey()
 const BACK_DIR = path.join(__dirname, '../public/backs')
 const FRONT_DIR = path.join(__dirname, '../public/fronts')  // letslook front (higher res)
 

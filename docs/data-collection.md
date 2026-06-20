@@ -8,7 +8,11 @@
 
 **출처:** 알라딘 OpenAPI  
 **스크립트:** `scripts/fetch-covers.mjs`  
-**API 키:** `ttbwanderwheel1036001`
+**API 키:** `.env.local`의 `ALADIN_TTB_KEY`
+
+```env
+ALADIN_TTB_KEY=...
+```
 
 ### 흐름
 1. `ItemSearch` API로 책 제목 검색 → `cover` URL 획득
