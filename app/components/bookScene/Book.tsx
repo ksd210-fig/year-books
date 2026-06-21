@@ -36,7 +36,7 @@ export function Book({
   const hasDragged = useRef(false)
 
   // 페이지 단면 텍스처 — drei 캐시로 모든 Book 인스턴스가 공유
-  const pageTex = useTexture('/textures/Book Seamless Texture.jpg')
+  const pageTex = useTexture('/textures/Book Seamless Texture.webp')
   useMemo(() => {
     pageTex.wrapS = THREE.RepeatWrapping
     pageTex.wrapT = THREE.RepeatWrapping
