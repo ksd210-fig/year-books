@@ -33,7 +33,7 @@ export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, sna
   const [loadedSet, setLoadedSet] = useState<Set<number>>(() => {
     const centerLocal = 0.5 / 0.9
     const initial = new Set<number>()
-    yOffsets.forEach((y, i) => { if (Math.abs(y - centerLocal) < 18) initial.add(i) })
+    yOffsets.forEach((y, i) => { if (Math.abs(y - centerLocal) < 6) initial.add(i) })
     return initial
   })
   const lastOffsetRef = useRef(-1)
@@ -91,17 +91,19 @@ export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, sna
   return (
     <group ref={group} position={[0, 0, 0]} scale={0.9}>
       {books.map((book, i) => (
-        <Suspense key={book.id} fallback={null}>
-          <group position={[0, yOffsets[i], 0]} rotation={[0, (i % 2 === 0 ? 1 : -1) * 0.02, 0]}>
-            <Book
-              book={book} index={i}
-              onSelect={() => onSelect(book)}
-              isSelected={selectedId === book.id}
-              selectedIndex={selectedIndex}
-              isLoaded={loadedSet.has(i)}
-            />
-          </group>
-        </Suspense>
+        <group key={book.id} position={[0, yOffsets[i], 0]} rotation={[0, (i % 2 === 0 ? 1 : -1) * 0.02, 0]}>
+          {loadedSet.has(i) && (
+            <Suspense fallback={null}>
+              <Book
+                book={book} index={i}
+                onSelect={() => onSelect(book)}
+                isSelected={selectedId === book.id}
+                selectedIndex={selectedIndex}
+                isLoaded={true}
+              />
+            </Suspense>
+          )}
+        </group>
       ))}
     </group>
   )
