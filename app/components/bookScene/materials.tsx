@@ -4,6 +4,15 @@ import { useMemo, useEffect, useRef, useState } from 'react'
 import { useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 
+// 페이지 단면 공유 재질 — 모든 책의 material-0,4,5가 공유하는 싱글톤
+let _sharedPageMat: THREE.MeshLambertMaterial | null = null
+export function useSharedPageEdgeMaterial(pageTex: THREE.Texture): THREE.MeshLambertMaterial {
+  return useMemo(() => {
+    if (!_sharedPageMat) _sharedPageMat = new THREE.MeshLambertMaterial({ map: pageTex })
+    return _sharedPageMat
+  }, []) // pageTex는 useTexture 캐시로 항상 동일 인스턴스
+}
+
 // 종이 질감 normal map — 모든 커버가 공유하는 싱글톤
 let _clothNormal: THREE.CanvasTexture | null = null
 function getClothNormalMap(): THREE.CanvasTexture {

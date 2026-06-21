@@ -7,7 +7,7 @@ import { RoundedBoxGeometry } from 'three-stdlib'
 import * as THREE from 'three'
 import type { Group } from 'three'
 import { type BookItem, bookDims } from '../../lib/bookUtils'
-import { ImageCoverMaterial, useClothNormalMap } from './materials'
+import { ImageCoverMaterial, useClothNormalMap, useSharedPageEdgeMaterial } from './materials'
 
 export function Book({
   book, index, onSelect, isSelected, selectedIndex, onCoverLoad,
@@ -45,6 +45,7 @@ export function Book({
     pageTex.minFilter = THREE.LinearMipmapLinearFilter
     pageTex.needsUpdate = true
   }, [pageTex])
+  const sharedPageEdgeMat = useSharedPageEdgeMaterial(pageTex)
 
   // 페이지 단면 — 수평 선이 보이는 절단면 텍스처
   const pageLineTex = useMemo(() => {
@@ -251,11 +252,11 @@ export function Book({
     >
       <mesh position={[pageX, 0, 0]}>
         <primitive object={pageGeometry} attach="geometry" />
-        <meshStandardMaterial color="#ddd5c2" map={pageLineTex} roughness={0.92} metalness={0} envMapIntensity={0.06} />
+        <meshLambertMaterial color="#ddd5c2" map={pageLineTex} />
       </mesh>
       <mesh>
         <primitive object={coverGeometry} attach="geometry" />
-        <meshStandardMaterial attach="material-0" map={pageTex} roughness={0.96} metalness={0} envMapIntensity={0.05} />
+        <primitive object={sharedPageEdgeMat} attach="material-0" />
         {book.spine
           ? <ImageCoverMaterial attach="material-1" src={book.spine} rotation={Math.PI / 2} roughness={0.4} envMapIntensity={0.32} fallback={spineTex} />
           : <meshStandardMaterial attach="material-1" map={spineTex} normalMap={clothNormal} normalScale={[0.35, 0.35]} roughness={0.46} metalness={0} envMapIntensity={0.28} />}
@@ -265,8 +266,8 @@ export function Book({
         {book.back
           ? <ImageCoverMaterial attach="material-3" src={book.back} rotation={Math.PI} roughness={0.44} envMapIntensity={0.28} fallback={backFallbackTex} />
           : <meshStandardMaterial attach="material-3" color={edge.clone().multiplyScalar(0.62)} roughness={0.74} metalness={0} envMapIntensity={0.12} />}
-        <meshStandardMaterial attach="material-4" map={pageTex} roughness={0.96} metalness={0} envMapIntensity={0.05} />
-        <meshStandardMaterial attach="material-5" map={pageTex} roughness={0.96} metalness={0} envMapIntensity={0.05} />
+        <primitive object={sharedPageEdgeMat} attach="material-4" />
+        <primitive object={sharedPageEdgeMat} attach="material-5" />
       </mesh>
     </group>
   )

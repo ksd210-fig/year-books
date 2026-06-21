@@ -23,6 +23,7 @@ export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, sna
   const booksReadyFiredRef = useRef(false)
   const selectedIndex = selectedId ? books.findIndex(b => b.id === selectedId) : null
   const wasSelectedRef = useRef(false)
+  const bookGroupRefs = useRef<(Group | null)[]>([])
 
   const yOffsets = useMemo(() => {
     const dims = books.map(b => bookDims(b).h)
@@ -62,6 +63,15 @@ export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, sna
 
   useFrame(() => {
     if (!group.current) return
+
+    const centerLocal = (0.5 - group.current.position.y) / 0.9
+
+    // 화면 밖 책은 visible=false로 draw call 제거 (선택 중엔 모두 표시)
+    const visRange = selectedIndex !== null ? Infinity : 22
+    bookGroupRefs.current.forEach((ref, i) => {
+      if (ref) ref.visible = Math.abs(yOffsets[i] - centerLocal) < visRange
+    })
+
     if (selectedId && selectedIndex !== null) {
       wasSelectedRef.current = true
       aboutProgressRef.current = 0
@@ -92,7 +102,6 @@ export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, sna
     if (Math.abs(scroll.offset - lastOffsetRef.current) < 0.02) return
     lastOffsetRef.current = scroll.offset
 
-    const centerLocal = (0.5 - group.current.position.y) / 0.9
     const toLoad: number[] = []
     yOffsets.forEach((y, i) => { if (Math.abs(y - centerLocal) < 18) toLoad.push(i) })
     setLoadedSet(prev => {
@@ -105,7 +114,7 @@ export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, sna
   return (
     <group ref={group} position={[0, 0, 0]} scale={0.9}>
       {books.map((book, i) => (
-        <group key={book.id} position={[0, yOffsets[i], 0]}>
+        <group key={book.id} position={[0, yOffsets[i], 0]} ref={el => { bookGroupRefs.current[i] = el }}>
           {loadedSet.has(i) && (
             <Suspense fallback={null}>
               <Book
