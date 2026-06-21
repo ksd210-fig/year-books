@@ -168,13 +168,6 @@ export function Book({
     return () => { window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp) }
   }, [isSelected])
 
-  useEffect(() => {
-    if (!group.current) return
-    group.current.rotation.x = Math.PI / 2
-    group.current.rotation.y = Math.PI / 2
-    group.current.rotation.z = -Math.PI / 2
-  }, [])
-
   useFrame((state) => {
     if (!group.current) return
     const isAbove = selectedIndex !== null && index < selectedIndex
@@ -229,6 +222,7 @@ export function Book({
   return (
     <group
       ref={group}
+      rotation={[Math.PI / 2, Math.PI / 2, -Math.PI / 2]}
       onPointerDown={(e) => {
         if (!isSelected) return
         e.stopPropagation()
