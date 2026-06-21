@@ -21,8 +21,7 @@ export function BookshelfScene({ books, onSelect, onScrollEl, selectedId, aboutP
   const targetYRef = useRef(0.5)
   const snapCameraRef = useRef(false)
   return (
-    <Canvas shadows="percentage" dpr={[1, 2]} gl={{ antialias: true }}
-      onCreated={() => requestAnimationFrame(() => onReady?.())}>
+    <Canvas shadows="percentage" dpr={[1, 2]} gl={{ antialias: true }}>
       <color attach="background" args={['#1c1714']} />
       <CameraSetup targetYRef={targetYRef} snapCameraRef={snapCameraRef} />
       <directionalLight
@@ -37,7 +36,7 @@ export function BookshelfScene({ books, onSelect, onScrollEl, selectedId, aboutP
       <ambientLight intensity={0.12} />
       <Suspense fallback={null}>
         <ScrollControls pages={books.length * 0.4 + 1.0} damping={0.005}>
-          <Stack books={books} onSelect={onSelect} onScrollEl={onScrollEl} selectedId={selectedId} targetYRef={targetYRef} snapCameraRef={snapCameraRef} aboutProgressRef={aboutProgressRef} />
+          <Stack books={books} onSelect={onSelect} onScrollEl={onScrollEl} selectedId={selectedId} targetYRef={targetYRef} snapCameraRef={snapCameraRef} aboutProgressRef={aboutProgressRef} onBooksReady={onReady} />
         </ScrollControls>
       </Suspense>
     </Canvas>

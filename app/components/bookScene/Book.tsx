@@ -10,13 +10,14 @@ import { type BookItem, bookDims } from '../../lib/bookUtils'
 import { ImageCoverMaterial, useClothNormalMap } from './materials'
 
 export function Book({
-  book, index, onSelect, isSelected, selectedIndex,
+  book, index, onSelect, isSelected, selectedIndex, onCoverLoad,
 }: {
   book: BookItem
   index: number
   onSelect: () => void
   isSelected: boolean
   selectedIndex: number | null
+  onCoverLoad?: () => void
 }) {
   const group = useRef<Group>(null)
   const [hovered, setHovered] = useState(false)
@@ -138,6 +139,10 @@ export function Book({
   }, [book.coverColor, book.textColor, book.titleKo, book.author, book.year, W, D])
 
   useEffect(() => {
+    if (!book.cover) onCoverLoad?.()
+  }, [book.cover, onCoverLoad])
+
+  useEffect(() => {
     if (isSelected) {
       document.body.style.cursor = 'grab'
     } else {
@@ -244,7 +249,7 @@ export function Book({
           ? <ImageCoverMaterial attach="material-1" src={book.spine} rotation={Math.PI / 2} roughness={0.4} envMapIntensity={0.32} fallback={spineTex} />
           : <meshStandardMaterial attach="material-1" map={spineTex} normalMap={clothNormal} normalScale={[0.35, 0.35]} roughness={0.46} metalness={0} envMapIntensity={0.28} />}
         {book.cover
-          ? <ImageCoverMaterial attach="material-2" src={book.cover} roughness={0.38} envMapIntensity={0.36} fallback={coverTex} />
+          ? <ImageCoverMaterial attach="material-2" src={book.cover} roughness={0.38} envMapIntensity={0.36} fallback={coverTex} onLoad={onCoverLoad} />
           : <meshStandardMaterial attach="material-2" map={coverTex} normalMap={clothNormal} normalScale={[0.35, 0.35]} roughness={0.38} metalness={0} envMapIntensity={0.34} />}
         {book.back
           ? <ImageCoverMaterial attach="material-3" src={book.back} rotation={Math.PI} roughness={0.44} envMapIntensity={0.28} fallback={null} />

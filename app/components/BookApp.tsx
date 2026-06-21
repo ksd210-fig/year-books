@@ -87,6 +87,12 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
   const [selectedId, setSelectedId] = useState<string | null>(initialId ?? null)
   const [hoveredAnchor, setHoveredAnchor] = useState<number | null>(null)
   const [sceneReady, setSceneReady] = useState(false)
+
+  // 이미지 로드가 너무 느릴 경우 5초 후 강제로 씬 표시
+  useEffect(() => {
+    const t = setTimeout(() => setSceneReady(true), 5000)
+    return () => clearTimeout(t)
+  }, [])
   const scrollElRef = useRef<HTMLElement | null>(null)
   const aboutProgressRef = useRef(0)
   const aboutPanelRef = useRef<HTMLDivElement>(null)
@@ -185,7 +191,8 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
       <div style={{
         position: 'absolute', inset: 0, zIndex: 0,
         opacity: sceneReady ? 1 : 0,
-        transition: 'opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+        transform: sceneReady ? 'translateY(0)' : 'translateY(-48px)',
+        transition: 'opacity 1.0s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)',
       }}>
         <BookshelfScene books={SCENE_BOOKS} onSelect={handleSelect} onScrollEl={handleScrollEl} selectedId={selectedId} aboutProgressRef={aboutProgressRef} onReady={() => setSceneReady(true)} />
       </div>
@@ -241,10 +248,9 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
         position: 'fixed',
         left: 24, top: '50%',
         zIndex: 50,
-        opacity: sceneReady ? 1 : 0,
-        transform: sceneReady ? 'translateY(-50%)' : 'translateY(calc(-50% + 16px))',
-        transition: 'opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1)',
-        transitionDelay: '0.2s',
+        transform: sceneReady ? 'translateY(-50%)' : 'translateY(calc(-50% + 12px))',
+        transition: 'transform 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
+        transitionDelay: '0.15s',
       }}>
       <aside ref={sidebarRef} className="year-index" style={{
         display: 'var(--year-index-display)', flexDirection: 'column',
@@ -252,6 +258,7 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
       }}>
         {BOOKS.map((book, i) => {
           const isHovered = hoveredAnchor === i
+          const staggerDelay = sceneReady ? `${0.85 + i * 0.05}s` : '0s'
           return (
             <button
               key={book.id}
@@ -268,6 +275,10 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
                 background: 'none', border: 'none', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: 10, height: 12,
                 padding: 0, position: 'relative',
+                opacity: sceneReady ? 1 : 0,
+                transform: sceneReady ? 'translateX(0)' : 'translateX(-8px)',
+                transition: 'opacity 0.4s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+                transitionDelay: staggerDelay,
               }}
             >
               <div style={{

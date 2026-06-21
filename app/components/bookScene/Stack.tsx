@@ -1,13 +1,13 @@
 'use client'
 
-import { Suspense, useRef, useMemo, useState, useEffect } from 'react'
+import { Suspense, useRef, useMemo, useState, useEffect, useCallback } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useScroll } from '@react-three/drei'
 import type { Group } from 'three'
 import { type BookItem, bookDims, BOOK_GAP } from '../../lib/bookUtils'
 import { Book } from './Book'
 
-export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, snapCameraRef, aboutProgressRef }: {
+export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, snapCameraRef, aboutProgressRef, onBooksReady }: {
   books: BookItem[]
   onSelect: (book: BookItem) => void
   onScrollEl?: (el: HTMLElement) => void
@@ -15,9 +15,12 @@ export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, sna
   targetYRef: React.MutableRefObject<number>
   snapCameraRef: React.MutableRefObject<boolean>
   aboutProgressRef: React.MutableRefObject<number>
+  onBooksReady?: () => void
 }) {
   const group = useRef<Group>(null)
   const scroll = useScroll()
+  const coverLoadCountRef = useRef(0)
+  const booksReadyFiredRef = useRef(false)
   const selectedIndex = selectedId ? books.findIndex(b => b.id === selectedId) : null
   const wasSelectedRef = useRef(false)
 
@@ -37,6 +40,17 @@ export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, sna
     return initial
   })
   const lastOffsetRef = useRef(-1)
+
+  // 처음 화면에 보이는 책 중 최대 3권이 커버 이미지를 로드하면 onBooksReady 발화
+  const readyThreshold = Math.min(3, books.length)
+  const handleCoverLoad = useCallback(() => {
+    if (booksReadyFiredRef.current) return
+    coverLoadCountRef.current++
+    if (coverLoadCountRef.current >= readyThreshold) {
+      booksReadyFiredRef.current = true
+      onBooksReady?.()
+    }
+  }, [onBooksReady, readyThreshold])
 
   useEffect(() => { onScrollEl?.(scroll.el) }, [scroll.el, onScrollEl])
 
@@ -99,6 +113,7 @@ export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, sna
                 onSelect={() => onSelect(book)}
                 isSelected={selectedId === book.id}
                 selectedIndex={selectedIndex}
+                onCoverLoad={handleCoverLoad}
               />
             </Suspense>
           )}
