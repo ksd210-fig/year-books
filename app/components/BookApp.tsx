@@ -69,7 +69,10 @@ const SCENE_BOOKS: BookItem[] = BOOKS.map((b, i) => {
   }
 })
 
-const PAGES = BOOKS.length * 0.4
+const BOOK_PAGES = BOOKS.length * 0.4
+const EXTRA_PAGES = 1.0
+const TOTAL_PAGES = BOOK_PAGES + EXTRA_PAGES
+const BOOK_SCROLL_FRACTION = BOOK_PAGES / TOTAL_PAGES
 
 const SCENE_Y_OFFSETS = (() => {
   const dims = SCENE_BOOKS.map(b => bookDims(b).h)
@@ -84,6 +87,28 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
   const [selectedId, setSelectedId] = useState<string | null>(initialId ?? null)
   const [hoveredAnchor, setHoveredAnchor] = useState<number | null>(null)
   const scrollElRef = useRef<HTMLElement | null>(null)
+  const aboutProgressRef = useRef(0)
+  const aboutPanelRef = useRef<HTMLDivElement>(null)
+  const sidebarRef = useRef<HTMLElement>(null)
+
+  // 3D scroll.offset 기반으로 업데이트된 aboutProgressRef를 rAF로 DOM에 직접 반영
+  useEffect(() => {
+    let rafId: number
+    function loop() {
+      const p = aboutProgressRef.current
+      if (aboutPanelRef.current) {
+        aboutPanelRef.current.style.transform = `translateY(${(1 - p) * 100}%)`
+        aboutPanelRef.current.style.pointerEvents = p > 0.05 ? 'auto' : 'none'
+      }
+      if (sidebarRef.current) {
+        sidebarRef.current.style.opacity = String(Math.max(0, 1 - p * 4))
+        sidebarRef.current.style.pointerEvents = p > 0 ? 'none' : 'auto'
+      }
+      rafId = requestAnimationFrame(loop)
+    }
+    rafId = requestAnimationFrame(loop)
+    return () => cancelAnimationFrame(rafId)
+  }, [])
 
   const selectedIdx = selectedId ? BOOKS.findIndex(b => b.id === selectedId) : -1
   const selectedBook = selectedIdx >= 0 ? BOOKS[selectedIdx] : null
@@ -94,7 +119,7 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
   // URL ↔ state sync
   const hasInitialized = useRef(false)
   const isPopState = useRef(false)
-
+  const prevSelectedId = useRef<string | null>(initialId ?? null)
   useEffect(() => {
     if (!hasInitialized.current) return
     if (isPopState.current) { isPopState.current = false; return }
@@ -102,7 +127,13 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
     if (selectedId) {
       const newPath = `/book/${selectedId}`
       if (window.location.pathname !== newPath) {
-        window.history.pushState({ book: selectedId }, '', newPath)
+        // 이미 상세 보는 중에 다른 책으로 이동 → replace (뒤로가기가 목록으로 가도록)
+        const wasInDetail = window.location.pathname.startsWith('/book/')
+        if (wasInDetail) {
+          window.history.replaceState({ book: selectedId }, '', newPath)
+        } else {
+          window.history.pushState({ book: selectedId }, '', newPath)
+        }
       }
     } else {
       window.history.replaceState(null, '', '/')
@@ -120,6 +151,16 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
     return () => window.removeEventListener('popstate', onPopState)
   }, [])
 
+  // 상세 닫힐 때 스크롤 위치를 마지막 책 위치로 즉시 맞춤 (애니메이션 없이)
+  useEffect(() => {
+    if (selectedId === null && prevSelectedId.current !== null) {
+      const idx = BOOKS.findIndex(b => b.id === prevSelectedId.current)
+      if (idx >= 0) scrollToBook(idx, true)
+    }
+    prevSelectedId.current = selectedId
+  }, [selectedId])
+
+
   function handleSelect(book: BookItem) {
     setSelectedId(prev => prev === book.id ? null : book.id)
   }
@@ -128,12 +169,12 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
     scrollElRef.current = el
   }, [])
 
-  function scrollToBook(index: number) {
+  function scrollToBook(index: number, instant = false) {
     const el = scrollElRef.current
     if (!el) return
     const last = SCENE_Y_OFFSETS[SCENE_Y_OFFSETS.length - 1]
     const scrollFraction = index === 0 ? 0 : SCENE_Y_OFFSETS[index] / last
-    el.scrollTo({ top: scrollFraction * (PAGES - 1) * window.innerHeight, behavior: 'smooth' })
+    el.scrollTo({ top: scrollFraction * BOOK_SCROLL_FRACTION * (TOTAL_PAGES - 1) * window.innerHeight, behavior: instant ? 'instant' : 'smooth' })
   }
 
   return (
@@ -141,7 +182,7 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
 
       {/* ── 3D 책장 씬 ── */}
       <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-        <BookshelfScene books={SCENE_BOOKS} onSelect={handleSelect} onScrollEl={handleScrollEl} selectedId={selectedId} />
+        <BookshelfScene books={SCENE_BOOKS} onSelect={handleSelect} onScrollEl={handleScrollEl} selectedId={selectedId} aboutProgressRef={aboutProgressRef} />
       </div>
 
       {/* ── 사이드바 호버 딤 오버레이 ── */}
@@ -186,14 +227,13 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
       </header>
 
       {/* ── 사이드바 북 인덱스 (왼쪽) ── */}
-      <aside className="year-index" style={{
+      <aside ref={sidebarRef} className="year-index" style={{
         position: 'fixed',
         left: 24, top: '50%',
         transform: 'translateY(-50%)',
         zIndex: 50,
         display: 'var(--year-index-display)', flexDirection: 'column',
         gap: 3, alignItems: 'flex-start',
-        pointerEvents: 'auto',
       }}>
         {BOOKS.map((book, i) => {
           const isHovered = hoveredAnchor === i
@@ -316,6 +356,62 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
             )}
           </>
         )}
+      </div>
+
+      {/* ── About 패널 (스크롤 맨 아래에서 올라옴) ── */}
+      <div
+        ref={aboutPanelRef}
+        onWheel={(e) => { if (scrollElRef.current) scrollElRef.current.scrollTop += e.deltaY }}
+        style={{
+          position: 'fixed',
+          bottom: 0, left: 0, right: 0,
+          height: '100dvh',
+          transform: 'translateY(100%)',
+          zIndex: 35,
+          background: '#f5f1ea',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          padding: '0 max(48px, 8vw)',
+          pointerEvents: 'none',
+        }}>
+        <div style={{
+          fontSize: '0.7rem', letterSpacing: '0.25em', color: '#1c1714',
+          opacity: 0.4, marginBottom: 32, fontFamily: SERIF,
+        }}>
+          FIG.1 BOOKS
+        </div>
+        <p style={{
+          fontFamily: SERIF, fontSize: 'clamp(0.9rem, 1.6vw, 1.1rem)',
+          lineHeight: 1.85, color: '#1c1714', opacity: 0.82,
+          maxWidth: 600, margin: '0 0 16px',
+        }}>
+          Fig.1은 역사를 바탕으로 다양한 프로젝트를 만듭니다.
+        </p>
+        <p style={{
+          fontFamily: SERIF, fontSize: 'clamp(0.85rem, 1.5vw, 1rem)',
+          lineHeight: 1.85, color: '#1c1714', opacity: 0.6,
+          maxWidth: 600, margin: '0 0 16px',
+        }}>
+          Year Book은 국내에서 출판된, 제목이 특정 연도인 책들을 한데 모아 책 목록 자체가 하나의 연표처럼 보이도록 구성한 프로젝트입니다. 우리는 특정한 해에 일어난 사건들이 오늘날의 세계를 어떻게 만들어왔는지를 탐구하는 책들을 선별했습니다.
+        </p>
+        <p style={{
+          fontFamily: SERIF, fontSize: 'clamp(0.85rem, 1.5vw, 1rem)',
+          lineHeight: 1.75, color: '#1c1714', opacity: 0.45,
+          maxWidth: 600, margin: '0 0 36px',
+        }}>
+          Fig.1의 더 많은 프로젝트가 궁금하다면 아래 링크를 방문해 주세요.
+        </p>
+        <div style={{ display: 'flex', gap: 24 }}>
+          <a href="https://www.youtube.com/@fig1media" target="_blank" rel="noopener noreferrer"
+            style={{ fontFamily: SERIF, fontSize: '0.8rem', color: '#1c1714', opacity: 0.45, textDecoration: 'none', letterSpacing: '0.1em' }}>
+            YOUTUBE
+          </a>
+          <a href="https://tumblbug.com/fig1" target="_blank" rel="noopener noreferrer"
+            style={{ fontFamily: SERIF, fontSize: '0.8rem', color: '#1c1714', opacity: 0.45, textDecoration: 'none', letterSpacing: '0.1em' }}>
+            TUMBLBUG
+          </a>
+        </div>
       </div>
     </div>
   )
