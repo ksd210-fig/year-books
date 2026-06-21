@@ -105,7 +105,7 @@ export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, sna
   return (
     <group ref={group} position={[0, 0, 0]} scale={0.9}>
       {books.map((book, i) => (
-        <group key={book.id} position={[0, yOffsets[i], 0]} rotation={[0, (i % 2 === 0 ? 1 : -1) * 0.02, 0]}>
+        <group key={book.id} position={[0, yOffsets[i], 0]}>
           {loadedSet.has(i) && (
             <Suspense fallback={null}>
               <Book
