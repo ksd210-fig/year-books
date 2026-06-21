@@ -189,6 +189,9 @@ export function Book({
     const isAbove = selectedIndex !== null && index < selectedIndex
     const isBelow = selectedIndex !== null && index > selectedIndex
 
+    // 부모 그룹이 invisible이면 전환 중이 아닌 한 skip (draw call 없는 책은 연산도 생략)
+    if (!isSelected && !isAbove && !isBelow && group.current.parent?.visible === false) return
+
     if (isSelected) {
       const lerpF = isDragging.current ? 0.3 : 0.07
       const targetRx = Math.PI * 75 / 180 + dragOffset.current.x
