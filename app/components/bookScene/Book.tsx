@@ -7,17 +7,16 @@ import { RoundedBoxGeometry } from 'three-stdlib'
 import * as THREE from 'three'
 import type { Group } from 'three'
 import { type BookItem, bookDims } from '../../lib/bookUtils'
-import { ImageCoverMaterial, CoverStripMaterial, useClothNormalMap } from './materials'
+import { ImageCoverMaterial, useClothNormalMap } from './materials'
 
 export function Book({
-  book, index, onSelect, isSelected, selectedIndex, isLoaded,
+  book, index, onSelect, isSelected, selectedIndex,
 }: {
   book: BookItem
   index: number
   onSelect: () => void
   isSelected: boolean
   selectedIndex: number | null
-  isLoaded: boolean
 }) {
   const group = useRef<Group>(null)
   const [hovered, setHovered] = useState(false)
@@ -35,7 +34,7 @@ export function Book({
   const lastMouse = useRef({ x: 0, y: 0 })
   const hasDragged = useRef(false)
 
-  // 페이지 단면 텍스처 — drei 캐시로 모든 Book 인스턴스가 공유
+  // 페이지 바깥면 텍스처 — drei 캐시로 모든 Book 인스턴스가 공유
   const pageTex = useTexture('/textures/Book Seamless Texture.webp')
   useMemo(() => {
     pageTex.wrapS = THREE.RepeatWrapping
@@ -64,7 +63,6 @@ export function Book({
       ctx.moveTo(0, y); ctx.lineTo(W, y)
       ctx.stroke()
     }
-    // 위쪽 그늘 (스파인 쪽)
     const grad = ctx.createLinearGradient(0, 0, 0, H * 0.18)
     grad.addColorStop(0, 'rgba(60, 40, 20, 0.14)')
     grad.addColorStop(1, 'rgba(60, 40, 20, 0)')
@@ -210,9 +208,6 @@ export function Book({
 
   const edge = new THREE.Color(book.edgeColor)
   const coverSide = new THREE.Color(book.coverColor)
-  const pageEdge = new THREE.Color('#d8d0bd')
-  const boardSide = book.cover ? new THREE.Color('#d7d0c1') : coverSide.clone().lerp(edge, 0.18)
-  const boardShadow = book.cover ? new THREE.Color('#8d8577') : edge.clone().multiplyScalar(0.62)
   const clothNormal = useClothNormalMap()
   const coverRadius = Math.min(0.003, H * 0.025)
   const pageRadius = Math.min(0.008, pageH * 0.08)
@@ -245,15 +240,15 @@ export function Book({
       <mesh castShadow receiveShadow>
         <primitive object={coverGeometry} attach="geometry" />
         <meshStandardMaterial attach="material-0" map={pageTex} roughness={0.96} metalness={0} envMapIntensity={0.05} />
-        {book.spine && isLoaded
-          ? <ImageCoverMaterial attach="material-1" src={book.spine} rotation={Math.PI / 2} roughness={0.4} envMapIntensity={0.32} />
+        {book.spine
+          ? <ImageCoverMaterial attach="material-1" src={book.spine} rotation={Math.PI / 2} roughness={0.4} envMapIntensity={0.32} fallback={spineTex} />
           : <meshStandardMaterial attach="material-1" map={spineTex} normalMap={clothNormal} normalScale={[0.35, 0.35]} roughness={0.46} metalness={0} envMapIntensity={0.28} />}
-        {book.cover && isLoaded
-          ? <ImageCoverMaterial attach="material-2" src={book.cover} roughness={0.38} envMapIntensity={0.36} />
+        {book.cover
+          ? <ImageCoverMaterial attach="material-2" src={book.cover} roughness={0.38} envMapIntensity={0.36} fallback={coverTex} />
           : <meshStandardMaterial attach="material-2" map={coverTex} normalMap={clothNormal} normalScale={[0.35, 0.35]} roughness={0.38} metalness={0} envMapIntensity={0.34} />}
-        {book.back && isLoaded
-          ? <ImageCoverMaterial attach="material-3" src={book.back} rotation={Math.PI} roughness={0.44} envMapIntensity={0.28} />
-          : <meshStandardMaterial attach="material-3" color={boardShadow.clone().multiplyScalar(0.7)} roughness={0.74} metalness={0} envMapIntensity={0.12} />}
+        {book.back
+          ? <ImageCoverMaterial attach="material-3" src={book.back} rotation={Math.PI} roughness={0.44} envMapIntensity={0.28} fallback={null} />
+          : <meshStandardMaterial attach="material-3" color={edge.clone().multiplyScalar(0.62)} roughness={0.74} metalness={0} envMapIntensity={0.12} />}
         <meshStandardMaterial attach="material-4" map={pageTex} roughness={0.96} metalness={0} envMapIntensity={0.05} />
         <meshStandardMaterial attach="material-5" map={pageTex} roughness={0.96} metalness={0} envMapIntensity={0.05} />
       </mesh>

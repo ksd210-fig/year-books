@@ -1,8 +1,7 @@
 'use client'
 
-import { useMemo, useEffect } from 'react'
+import { useMemo, useEffect, useRef, useState } from 'react'
 import { useThree } from '@react-three/fiber'
-import { useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 
 // 종이 질감 normal map — 모든 커버가 공유하는 싱글톤
@@ -15,7 +14,6 @@ function getClothNormalMap(): THREE.CanvasTexture {
   const ctx = cvs.getContext('2d')!
   const img = ctx.createImageData(W, H)
   const d = img.data
-  // 간단한 pseudo-random noise (종이 섬유 느낌)
   function noise(x: number, y: number) {
     const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453
     return (n - Math.floor(n)) * 2 - 1
@@ -65,31 +63,52 @@ export function useClothNormalMap() {
   return useMemo(() => getClothNormalMap(), [])
 }
 
+// Suspense 없이 비동기 로드 — fallback 텍스처를 즉시 표시하고 이미지 로드 후 교체
 export function ImageCoverMaterial({
-  src, attach, rotation, roughness = 0.42, envMapIntensity = 0.32,
+  src, attach, rotation, roughness = 0.42, envMapIntensity = 0.32, fallback,
 }: {
   src: string
   attach: string
   rotation?: number
   roughness?: number
   envMapIntensity?: number
+  fallback?: THREE.Texture | null
 }) {
-  const sourceTex = useTexture(src)
   const { gl } = useThree()
-
-  const tex = useMemo(() => {
-    const t = sourceTex.clone()
-    t.anisotropy = gl.capabilities.getMaxAnisotropy()
-    t.minFilter = THREE.LinearFilter
-    t.needsUpdate = true
-    if (rotation) { t.rotation = rotation; t.center.set(0.5, 0.5) }
-    return t
-  }, [gl, rotation, sourceTex])
-
-  useEffect(() => () => tex.dispose(), [tex])
-
+  const [tex, setTex] = useState<THREE.Texture | null>(null)
+  const loadedRef = useRef<THREE.Texture | null>(null)
   const normalMap = useMemo(() => getClothNormalMap(), [])
-  return <meshStandardMaterial attach={attach} map={tex} normalMap={normalMap} normalScale={[0.35, 0.35]} roughness={roughness} metalness={0} envMapIntensity={envMapIntensity} />
+
+  useEffect(() => {
+    let cancelled = false
+    new THREE.TextureLoader().load(src, (loaded) => {
+      if (cancelled) { loaded.dispose(); return }
+      loaded.anisotropy = gl.capabilities.getMaxAnisotropy()
+      loaded.minFilter = THREE.LinearFilter
+      loaded.needsUpdate = true
+      if (rotation !== undefined) { loaded.rotation = rotation; loaded.center.set(0.5, 0.5) }
+      loadedRef.current = loaded
+      setTex(loaded)
+    })
+    return () => {
+      cancelled = true
+      loadedRef.current?.dispose()
+      loadedRef.current = null
+    }
+  }, [src, gl, rotation])
+
+  const activeTex = tex ?? fallback ?? null
+  return (
+    <meshStandardMaterial
+      attach={attach}
+      map={activeTex}
+      normalMap={normalMap}
+      normalScale={[0.35, 0.35]}
+      roughness={roughness}
+      metalness={0}
+      envMapIntensity={envMapIntensity}
+    />
+  )
 }
 
 export function CoverStripMaterial({
@@ -102,39 +121,55 @@ export function CoverStripMaterial({
   envMapIntensity?: number
   polygonOffset?: number
 }) {
-  const sourceTex = useTexture(src)
   const { gl } = useThree()
+  const [tex, setTex] = useState<THREE.Texture | null>(null)
+  const loadedRef = useRef<THREE.Texture | null>(null)
 
-  const tex = useMemo(() => {
-    const img = sourceTex.image as HTMLImageElement | HTMLCanvasElement | ImageBitmap | undefined
-    const sourceW = img?.width ?? 1
-    const sourceH = img?.height ?? 1
-    const stripW = Math.max(8, Math.round(sourceW * 0.055))
-    const pad = 3
-    const cvs = document.createElement('canvas')
-    cvs.width = stripW + pad * 2
-    cvs.height = sourceH
-    const ctx = cvs.getContext('2d')!
-    const sx = edge === 'left'
-      ? Math.max(0, Math.round(sourceW * 0.018))
-      : Math.max(0, sourceW - stripW - Math.round(sourceW * 0.018))
-    ctx.drawImage(img as CanvasImageSource, sx, 0, stripW, sourceH, pad, 0, stripW, sourceH)
-    ctx.drawImage(img as CanvasImageSource, sx, 0, 1, sourceH, 0, 0, pad, sourceH)
-    ctx.drawImage(img as CanvasImageSource, sx + stripW - 1, 0, 1, sourceH, pad + stripW, 0, pad, sourceH)
-    const t = new THREE.CanvasTexture(cvs)
-    t.anisotropy = gl.capabilities.getMaxAnisotropy()
-    t.minFilter = THREE.LinearFilter
-    t.magFilter = THREE.LinearFilter
-    t.needsUpdate = true
-    return t
-  }, [edge, gl, sourceTex])
-
-  useEffect(() => () => tex.dispose(), [tex])
+  useEffect(() => {
+    let cancelled = false
+    new THREE.TextureLoader().load(src, (sourceTex) => {
+      if (cancelled) { sourceTex.dispose(); return }
+      const img = sourceTex.image as HTMLImageElement | HTMLCanvasElement | ImageBitmap | undefined
+      const sourceW = img?.width ?? 1
+      const sourceH = img?.height ?? 1
+      const stripW = Math.max(8, Math.round(sourceW * 0.055))
+      const pad = 3
+      const cvs = document.createElement('canvas')
+      cvs.width = stripW + pad * 2
+      cvs.height = sourceH
+      const ctx = cvs.getContext('2d')!
+      const sx = edge === 'left'
+        ? Math.max(0, Math.round(sourceW * 0.018))
+        : Math.max(0, sourceW - stripW - Math.round(sourceW * 0.018))
+      ctx.drawImage(img as CanvasImageSource, sx, 0, stripW, sourceH, pad, 0, stripW, sourceH)
+      ctx.drawImage(img as CanvasImageSource, sx, 0, 1, sourceH, 0, 0, pad, sourceH)
+      ctx.drawImage(img as CanvasImageSource, sx + stripW - 1, 0, 1, sourceH, pad + stripW, 0, pad, sourceH)
+      sourceTex.dispose()
+      const t = new THREE.CanvasTexture(cvs)
+      t.anisotropy = gl.capabilities.getMaxAnisotropy()
+      t.minFilter = THREE.LinearFilter
+      t.magFilter = THREE.LinearFilter
+      t.needsUpdate = true
+      loadedRef.current = t
+      setTex(t)
+    })
+    return () => {
+      cancelled = true
+      loadedRef.current?.dispose()
+      loadedRef.current = null
+    }
+  }, [src, gl, edge])
 
   return (
     <meshStandardMaterial
-      attach={attach} map={tex} roughness={roughness} metalness={0} envMapIntensity={envMapIntensity}
-      polygonOffset={polygonOffset !== undefined} polygonOffsetFactor={polygonOffset ?? 0} polygonOffsetUnits={polygonOffset ?? 0}
+      attach={attach}
+      map={tex}
+      roughness={roughness}
+      metalness={0}
+      envMapIntensity={envMapIntensity}
+      polygonOffset={polygonOffset !== undefined}
+      polygonOffsetFactor={polygonOffset ?? 0}
+      polygonOffsetUnits={polygonOffset ?? 0}
     />
   )
 }
