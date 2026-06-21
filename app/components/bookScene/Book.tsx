@@ -250,11 +250,11 @@ export function Book({
       onPointerOut={() => { setHovered(false); if (!isSelected) document.body.style.cursor = 'auto' }}
       onClick={(e) => { e.stopPropagation(); if (!hasDragged.current) onSelect(); hasDragged.current = false }}
     >
-      <mesh castShadow receiveShadow position={[pageX, 0, 0]}>
+      <mesh position={[pageX, 0, 0]}>
         <primitive object={pageGeometry} attach="geometry" />
         <meshStandardMaterial color="#ddd5c2" map={pageLineTex} roughness={0.92} metalness={0} envMapIntensity={0.06} />
       </mesh>
-      <mesh castShadow receiveShadow>
+      <mesh>
         <primitive object={coverGeometry} attach="geometry" />
         <meshStandardMaterial attach="material-0" map={pageTex} roughness={0.96} metalness={0} envMapIntensity={0.05} />
         {book.spine
