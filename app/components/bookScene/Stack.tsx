@@ -33,7 +33,7 @@ export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, sna
   const [loadedSet, setLoadedSet] = useState<Set<number>>(() => {
     const centerLocal = 0.5 / 0.9
     const initial = new Set<number>()
-    yOffsets.forEach((y, i) => { if (Math.abs(y - centerLocal) < 6) initial.add(i) })
+    yOffsets.forEach((y, i) => { if (Math.abs(y - centerLocal) < 18) initial.add(i) })
     return initial
   })
   const lastOffsetRef = useRef(-1)
