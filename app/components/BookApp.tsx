@@ -86,6 +86,7 @@ const SCENE_Y_OFFSETS = (() => {
 export default function BookApp({ initialId }: { initialId?: string | null }) {
   const [selectedId, setSelectedId] = useState<string | null>(initialId ?? null)
   const [hoveredAnchor, setHoveredAnchor] = useState<number | null>(null)
+  const [sceneReady, setSceneReady] = useState(false)
   const scrollElRef = useRef<HTMLElement | null>(null)
   const aboutProgressRef = useRef(0)
   const aboutPanelRef = useRef<HTMLDivElement>(null)
@@ -181,8 +182,12 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
     <div className="year-books-shell" style={{ position: 'relative', height: '100vh', width: '100%', overflow: 'hidden', background: BG }}>
 
       {/* ── 3D 책장 씬 ── */}
-      <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-        <BookshelfScene books={SCENE_BOOKS} onSelect={handleSelect} onScrollEl={handleScrollEl} selectedId={selectedId} aboutProgressRef={aboutProgressRef} />
+      <div style={{
+        position: 'absolute', inset: 0, zIndex: 0,
+        opacity: sceneReady ? 1 : 0,
+        transition: 'opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+      }}>
+        <BookshelfScene books={SCENE_BOOKS} onSelect={handleSelect} onScrollEl={handleScrollEl} selectedId={selectedId} aboutProgressRef={aboutProgressRef} onReady={() => setSceneReady(true)} />
       </div>
 
       {/* ── 사이드바 호버 딤 오버레이 ── */}
@@ -203,6 +208,10 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
           marginTop: 'calc(9px + 1vw)',
           cursor: selectedId ? 'pointer' : 'default',
           pointerEvents: 'auto',
+          opacity: sceneReady ? 1 : 0,
+          transform: sceneReady ? 'translateY(0)' : 'translateY(16px)',
+          transition: 'opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1)',
+          transitionDelay: '0.1s',
         }}
       >
         <div style={{
@@ -227,11 +236,17 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
       </header>
 
       {/* ── 사이드바 북 인덱스 (왼쪽) ── */}
-      <aside ref={sidebarRef} className="year-index" style={{
+      {/* 입장 애니메이션은 wrapper div, about-panel 페이드는 aside ref로 분리 */}
+      <div style={{
         position: 'fixed',
         left: 24, top: '50%',
-        transform: 'translateY(-50%)',
         zIndex: 50,
+        opacity: sceneReady ? 1 : 0,
+        transform: sceneReady ? 'translateY(-50%)' : 'translateY(calc(-50% + 16px))',
+        transition: 'opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1)',
+        transitionDelay: '0.2s',
+      }}>
+      <aside ref={sidebarRef} className="year-index" style={{
         display: 'var(--year-index-display)', flexDirection: 'column',
         gap: 3, alignItems: 'flex-start',
       }}>
@@ -279,6 +294,7 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
           )
         })}
       </aside>
+      </div>
 
       {/* ── 상세 슬라이드 패널 (오른쪽) ── */}
       <div className="book-detail-panel" data-selected={selectedBook ? 'true' : 'false'} style={{

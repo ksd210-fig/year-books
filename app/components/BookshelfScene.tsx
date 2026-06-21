@@ -10,17 +10,19 @@ import { Stack } from './bookScene/Stack'
 export type { BookItem }
 export { bookDims, BOOK_GAP }
 
-export function BookshelfScene({ books, onSelect, onScrollEl, selectedId, aboutProgressRef }: {
+export function BookshelfScene({ books, onSelect, onScrollEl, selectedId, aboutProgressRef, onReady }: {
   books: BookItem[]
   onSelect: (book: BookItem) => void
   onScrollEl?: (el: HTMLElement) => void
   selectedId?: string | null
   aboutProgressRef: React.MutableRefObject<number>
+  onReady?: () => void
 }) {
   const targetYRef = useRef(0.5)
   const snapCameraRef = useRef(false)
   return (
-    <Canvas shadows="percentage" dpr={[1, 2]} gl={{ antialias: true }}>
+    <Canvas shadows="percentage" dpr={[1, 2]} gl={{ antialias: true }}
+      onCreated={() => requestAnimationFrame(() => onReady?.())}>
       <color attach="background" args={['#1c1714']} />
       <CameraSetup targetYRef={targetYRef} snapCameraRef={snapCameraRef} />
       <directionalLight
