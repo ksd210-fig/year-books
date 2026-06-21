@@ -65,7 +65,7 @@ export function useClothNormalMap() {
 
 // Suspense 없이 비동기 로드 — fallback 텍스처를 즉시 표시하고 이미지 로드 후 교체
 export function ImageCoverMaterial({
-  src, attach, rotation, roughness = 0.42, envMapIntensity = 0.32, fallback,
+  src, attach, rotation, roughness = 0.42, envMapIntensity = 0.32, fallback, onLoad,
 }: {
   src: string
   attach: string
@@ -73,6 +73,7 @@ export function ImageCoverMaterial({
   roughness?: number
   envMapIntensity?: number
   fallback?: THREE.Texture | null
+  onLoad?: () => void
 }) {
   const { gl } = useThree()
   const [tex, setTex] = useState<THREE.Texture | null>(null)
@@ -87,8 +88,12 @@ export function ImageCoverMaterial({
       loaded.minFilter = THREE.LinearFilter
       loaded.needsUpdate = true
       if (rotation !== undefined) { loaded.rotation = rotation; loaded.center.set(0.5, 0.5) }
+      const prev = loadedRef.current
       loadedRef.current = loaded
       setTex(loaded)
+      onLoad?.()
+      // 새 텍스처 세팅 후 이전 텍스처 해제 — 순서 중요 (반대로 하면 brief black 발생)
+      prev?.dispose()
     })
     return () => {
       cancelled = true

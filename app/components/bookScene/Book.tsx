@@ -138,6 +138,18 @@ export function Book({
     return t
   }, [book.coverColor, book.textColor, book.titleKo, book.author, book.year, W, D])
 
+  const backFallbackTex = useMemo(() => {
+    const c = new THREE.Color(book.edgeColor).multiplyScalar(0.62)
+    const cvs = document.createElement('canvas')
+    cvs.width = 4; cvs.height = 4
+    const ctx = cvs.getContext('2d')!
+    ctx.fillStyle = `#${c.getHexString()}`
+    ctx.fillRect(0, 0, 4, 4)
+    const t = new THREE.CanvasTexture(cvs)
+    t.needsUpdate = true
+    return t
+  }, [book.edgeColor])
+
   useEffect(() => {
     if (!book.cover) onCoverLoad?.()
   }, [book.cover, onCoverLoad])
@@ -252,7 +264,7 @@ export function Book({
           ? <ImageCoverMaterial attach="material-2" src={book.cover} roughness={0.38} envMapIntensity={0.36} fallback={coverTex} onLoad={onCoverLoad} />
           : <meshStandardMaterial attach="material-2" map={coverTex} normalMap={clothNormal} normalScale={[0.35, 0.35]} roughness={0.38} metalness={0} envMapIntensity={0.34} />}
         {book.back
-          ? <ImageCoverMaterial attach="material-3" src={book.back} rotation={Math.PI} roughness={0.44} envMapIntensity={0.28} fallback={null} />
+          ? <ImageCoverMaterial attach="material-3" src={book.back} rotation={Math.PI} roughness={0.44} envMapIntensity={0.28} fallback={backFallbackTex} />
           : <meshStandardMaterial attach="material-3" color={edge.clone().multiplyScalar(0.62)} roughness={0.74} metalness={0} envMapIntensity={0.12} />}
         <meshStandardMaterial attach="material-4" map={pageTex} roughness={0.96} metalness={0} envMapIntensity={0.05} />
         <meshStandardMaterial attach="material-5" map={pageTex} roughness={0.96} metalness={0} envMapIntensity={0.05} />
