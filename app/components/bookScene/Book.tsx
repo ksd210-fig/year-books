@@ -226,9 +226,8 @@ export function Book({
   const edge = new THREE.Color(book.edgeColor)
   const coverSide = new THREE.Color(book.coverColor)
   const clothNormal = useClothNormalMap()
-  const coverRadius = Math.min(0.003, H * 0.025)
   const pageRadius = Math.min(0.008, pageH * 0.08)
-  const coverGeometry = useMemo(() => new RoundedBoxGeometry(coverW, H, coverD, 7, coverRadius), [coverW, H, coverD, coverRadius])
+  const coverGeometry = useMemo(() => new RoundedBoxGeometry(coverW, H, coverD, 2, 0), [coverW, H, coverD])
   const pageGeometry = useMemo(() => new RoundedBoxGeometry(pageW, pageH, pageD, 5, pageRadius), [pageW, pageH, pageD, pageRadius])
 
   return (
