@@ -60,7 +60,7 @@ html, body {
     justify-content: flex-start !important;
     border-left: 0 !important;
     border-top: 1px solid rgba(232, 223, 200, 0.16);
-    overflow-y: auto !important;
+    overflow-y: scroll !important;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
     overscroll-behavior: contain;

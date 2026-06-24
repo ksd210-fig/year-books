@@ -109,6 +109,7 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
   const aboutProgressRef = useRef(0)
   const aboutPanelRef = useRef<HTMLDivElement>(null)
   const sidebarRef = useRef<HTMLElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
 
   // 3D scroll.offset 기반으로 업데이트된 aboutProgressRef를 rAF로 DOM에 직접 반영
   useEffect(() => {
@@ -208,6 +209,14 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
     return () => { el.style.overflow = '' }
   }, [selectedId, isMobile])
 
+  // 패널 touchmove가 document/drei 리스너로 버블링되어 스크롤을 끊는 것을 막음
+  useEffect(() => {
+    const panel = panelRef.current
+    if (!panel) return
+    const stop = (e: TouchEvent) => e.stopPropagation()
+    panel.addEventListener('touchmove', stop, { passive: true })
+    return () => panel.removeEventListener('touchmove', stop)
+  }, [])
 
   function handleSelect(book: BookItem) {
     setSelectedId(prev => prev === book.id ? null : book.id)
@@ -370,6 +379,7 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
 
       {/* ── 상세 슬라이드 패널 (오른쪽) ── */}
       <div
+        ref={panelRef}
         className="book-detail-panel"
         data-selected={selectedBook ? 'true' : 'false'}
         style={{
@@ -385,7 +395,7 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
         backdropFilter: (isMobile && !!selectedId) ? 'none' : 'blur(24px)',
         WebkitBackdropFilter: (isMobile && !!selectedId) ? 'none' : 'blur(24px)',
         borderLeft: `1px solid ${selectedPalette?.text ?? '#c8b89a'}1a`,
-        overflowY: 'auto',
+        overflowY: 'scroll',
         WebkitOverflowScrolling: 'touch' as 'auto',
         touchAction: 'pan-y',
         overscrollBehavior: 'contain',
