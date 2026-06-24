@@ -90,7 +90,7 @@ export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, sna
       snapCameraRef.current = true
       wasSelectedRef.current = false
     } else {
-      group.current.position.y += (targetY - group.current.position.y) * 0.5
+      group.current.position.y += (targetY - group.current.position.y) * 1.0
     }
 
     if (Math.abs(scroll.offset - lastOffsetRef.current) < 0.02) return

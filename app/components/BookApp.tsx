@@ -205,9 +205,14 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
   // scrollEl state에 의존해 scroll.el 등록 후에도 effect가 재실행됨 (null race 방지)
   useEffect(() => {
     if (!isMobile || !selectedId || !scrollEl) return
-    const orig = scrollEl.style.overflow
+    const origOverflow = scrollEl.style.overflow
+    const origPointerEvents = scrollEl.style.pointerEvents
     scrollEl.style.overflow = 'hidden'
-    return () => { scrollEl.style.overflow = orig }
+    scrollEl.style.pointerEvents = 'none'
+    return () => {
+      scrollEl.style.overflow = origOverflow
+      scrollEl.style.pointerEvents = origPointerEvents
+    }
   }, [selectedId, isMobile, scrollEl])
 
   // 패널 touchmove가 document/drei 리스너로 버블링되어 스크롤을 끊는 것을 막음
