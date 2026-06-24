@@ -351,7 +351,6 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
       <div
         className="book-detail-panel"
         data-selected={selectedBook ? 'true' : 'false'}
-        onTouchMove={(e) => { if (selectedBook && isMobile) e.stopPropagation() }}
         style={{
         position: (isMobile && !!selectedId) ? 'absolute' : 'fixed',
         right: 'var(--book-detail-right)', top: 'var(--book-detail-top)', bottom: 'var(--book-detail-bottom)', left: 'var(--book-detail-left)',
