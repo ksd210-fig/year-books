@@ -37,49 +37,53 @@ export function Book({
   const hasDragged = useRef(false)
 
   // 페이지 바깥면 텍스처 — drei 캐시로 모든 Book 인스턴스가 공유
-  const pageTex = useTexture('/textures/Book Seamless Texture.webp')
-  useMemo(() => {
-    pageTex.wrapS = THREE.RepeatWrapping
-    pageTex.wrapT = THREE.RepeatWrapping
-    pageTex.repeat.set(6, 6)
-    pageTex.anisotropy = 8
-    pageTex.minFilter = THREE.LinearMipmapLinearFilter
-    pageTex.needsUpdate = true
-  }, [pageTex])
+  const sourcePageTex = useTexture('/textures/Book Seamless Texture.webp')
+  const pageTex = useMemo(() => {
+    const tex = sourcePageTex.clone()
+    tex.wrapS = THREE.RepeatWrapping
+    tex.wrapT = THREE.RepeatWrapping
+    tex.repeat.set(6, 6)
+    tex.anisotropy = 8
+    tex.minFilter = THREE.LinearMipmapLinearFilter
+    tex.needsUpdate = true
+    return tex
+  }, [sourcePageTex])
+  useEffect(() => () => pageTex.dispose(), [pageTex])
   const sharedPageEdgeMat = useSharedPageEdgeMaterial(pageTex)
 
   // 페이지 단면 — 수평 선이 보이는 절단면 텍스처
   const pageLineTex = useMemo(() => {
-    const W = 512, H = 512
+    const textureW = 512
+    const textureH = 512
     const cvs = document.createElement('canvas')
-    cvs.width = W; cvs.height = H
+    cvs.width = textureW; cvs.height = textureH
     const ctx = cvs.getContext('2d')!
     ctx.fillStyle = '#e8ddd0'
-    ctx.fillRect(0, 0, W, H)
+    ctx.fillRect(0, 0, textureW, textureH)
     const lineCount = 220
     for (let i = 0; i < lineCount; i++) {
-      const y = Math.round((i / lineCount) * H)
+      const y = Math.round((i / lineCount) * textureH)
       const alpha = i % 5 === 0 ? 0.13 : 0.055
       ctx.strokeStyle = `rgba(100, 80, 55, ${alpha})`
       ctx.lineWidth = 0.8
       ctx.beginPath()
-      ctx.moveTo(0, y); ctx.lineTo(W, y)
+      ctx.moveTo(0, y); ctx.lineTo(textureW, y)
       ctx.stroke()
     }
-    const grad = ctx.createLinearGradient(0, 0, 0, H * 0.18)
+    const grad = ctx.createLinearGradient(0, 0, 0, textureH * 0.18)
     grad.addColorStop(0, 'rgba(60, 40, 20, 0.14)')
     grad.addColorStop(1, 'rgba(60, 40, 20, 0)')
     ctx.fillStyle = grad
-    ctx.fillRect(0, 0, W, H * 0.18)
+    ctx.fillRect(0, 0, textureW, textureH * 0.18)
     const t = new THREE.CanvasTexture(cvs)
     t.wrapS = THREE.RepeatWrapping
     t.wrapT = THREE.RepeatWrapping
-    t.repeat.set(1, Math.round(D / W * 4))
+    t.repeat.set(1, Math.max(1, Math.round(D / W * 4)))
     t.anisotropy = 8
     t.minFilter = THREE.LinearMipmapLinearFilter
     t.generateMipmaps = true
     return t
-  }, [D])
+  }, [D, W])
 
   const spineTex = useMemo(() => {
     const CW = 512
@@ -234,7 +238,6 @@ export function Book({
   })
 
   const edge = new THREE.Color(book.edgeColor)
-  const coverSide = new THREE.Color(book.coverColor)
   const clothNormal = useClothNormalMap()
   const pageRadius = Math.min(0.008, pageH * 0.08)
   const coverGeometry = useMemo(() => new RoundedBoxGeometry(coverW, H, coverD, 2, 0), [coverW, H, coverD])

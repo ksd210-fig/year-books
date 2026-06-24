@@ -4,13 +4,10 @@ import { useMemo, useEffect, useRef, useState } from 'react'
 import { useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 
-// 페이지 단면 공유 재질 — 모든 책의 material-0,4,5가 공유하는 싱글톤
-let _sharedPageMat: THREE.MeshLambertMaterial | null = null
 export function useSharedPageEdgeMaterial(pageTex: THREE.Texture): THREE.MeshLambertMaterial {
-  return useMemo(() => {
-    if (!_sharedPageMat) _sharedPageMat = new THREE.MeshLambertMaterial({ map: pageTex })
-    return _sharedPageMat
-  }, []) // pageTex는 useTexture 캐시로 항상 동일 인스턴스
+  const material = useMemo(() => new THREE.MeshLambertMaterial({ map: pageTex }), [pageTex])
+  useEffect(() => () => material.dispose(), [material])
+  return material
 }
 
 // 종이 질감 normal map — 모든 커버가 공유하는 싱글톤
@@ -109,7 +106,7 @@ export function ImageCoverMaterial({
       loadedRef.current?.dispose()
       loadedRef.current = null
     }
-  }, [src, gl, rotation])
+  }, [src, gl, rotation, onLoad])
 
   const activeTex = tex ?? fallback ?? null
   return (
@@ -121,69 +118,6 @@ export function ImageCoverMaterial({
       roughness={roughness}
       metalness={0}
       envMapIntensity={envMapIntensity}
-    />
-  )
-}
-
-export function CoverStripMaterial({
-  src, attach, edge, roughness = 0.44, envMapIntensity = 0.24, polygonOffset,
-}: {
-  src: string
-  attach: string
-  edge: 'left' | 'right'
-  roughness?: number
-  envMapIntensity?: number
-  polygonOffset?: number
-}) {
-  const { gl } = useThree()
-  const [tex, setTex] = useState<THREE.Texture | null>(null)
-  const loadedRef = useRef<THREE.Texture | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    new THREE.TextureLoader().load(src, (sourceTex) => {
-      if (cancelled) { sourceTex.dispose(); return }
-      const img = sourceTex.image as HTMLImageElement | HTMLCanvasElement | ImageBitmap | undefined
-      const sourceW = img?.width ?? 1
-      const sourceH = img?.height ?? 1
-      const stripW = Math.max(8, Math.round(sourceW * 0.055))
-      const pad = 3
-      const cvs = document.createElement('canvas')
-      cvs.width = stripW + pad * 2
-      cvs.height = sourceH
-      const ctx = cvs.getContext('2d')!
-      const sx = edge === 'left'
-        ? Math.max(0, Math.round(sourceW * 0.018))
-        : Math.max(0, sourceW - stripW - Math.round(sourceW * 0.018))
-      ctx.drawImage(img as CanvasImageSource, sx, 0, stripW, sourceH, pad, 0, stripW, sourceH)
-      ctx.drawImage(img as CanvasImageSource, sx, 0, 1, sourceH, 0, 0, pad, sourceH)
-      ctx.drawImage(img as CanvasImageSource, sx + stripW - 1, 0, 1, sourceH, pad + stripW, 0, pad, sourceH)
-      sourceTex.dispose()
-      const t = new THREE.CanvasTexture(cvs)
-      t.anisotropy = gl.capabilities.getMaxAnisotropy()
-      t.minFilter = THREE.LinearFilter
-      t.magFilter = THREE.LinearFilter
-      t.needsUpdate = true
-      loadedRef.current = t
-      setTex(t)
-    })
-    return () => {
-      cancelled = true
-      loadedRef.current?.dispose()
-      loadedRef.current = null
-    }
-  }, [src, gl, edge])
-
-  return (
-    <meshStandardMaterial
-      attach={attach}
-      map={tex}
-      roughness={roughness}
-      metalness={0}
-      envMapIntensity={envMapIntensity}
-      polygonOffset={polygonOffset !== undefined}
-      polygonOffsetFactor={polygonOffset ?? 0}
-      polygonOffsetUnits={polygonOffset ?? 0}
     />
   )
 }

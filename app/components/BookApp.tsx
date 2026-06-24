@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { BOOKS } from '@/data/books'
-import { bookDims, BOOK_GAP, computeYOffsets, type BookItem } from '../lib/bookUtils'
+import { computeYOffsets, type BookItem } from '../lib/bookUtils'
 import { BookshelfScene } from './BookshelfScene'
 
 const PALETTES = [
@@ -27,11 +27,10 @@ const SERIF = "'EB Garamond', Georgia, 'Times New Roman', serif"
 const _dominantColorCache = new Map<string, string>()
 
 function useDominantColor(src: string | undefined): string | null {
-  const [color, setColor] = useState<string | null>(() => src ? (_dominantColorCache.get(src) ?? null) : null)
+  const [computedColor, setComputedColor] = useState<{ src: string, color: string } | null>(null)
   useEffect(() => {
     if (!src) return
-    const cached = _dominantColorCache.get(src)
-    if (cached) { setColor(cached); return }
+    if (_dominantColorCache.has(src)) return
     let cancelled = false
     const img = new Image()
     img.onload = () => {
@@ -48,12 +47,13 @@ function useDominantColor(src: string | undefined): string | null {
       const f = 0.32
       const result = `rgb(${Math.round(r / n * f)},${Math.round(g / n * f)},${Math.round(b / n * f)})`
       _dominantColorCache.set(src, result)
-      setColor(result)
+      setComputedColor({ src, color: result })
     }
     img.src = src
     return () => { cancelled = true }
   }, [src])
-  return src ? color : null
+  if (!src) return null
+  return _dominantColorCache.get(src) ?? (computedColor?.src === src ? computedColor.color : null)
 }
 
 const SCENE_BOOKS: BookItem[] = BOOKS.map((b, i) => {
@@ -75,10 +75,9 @@ const SCENE_BOOKS: BookItem[] = BOOKS.map((b, i) => {
   }
 })
 
-const BOOK_PAGES = BOOKS.length * 0.4
+const DESKTOP_SCROLL_PAGE_FACTOR = 0.4
+const MOBILE_SCROLL_PAGE_FACTOR = 0.08
 const EXTRA_PAGES = 1.0
-const TOTAL_PAGES = BOOK_PAGES + EXTRA_PAGES
-const BOOK_SCROLL_FRACTION = BOOK_PAGES / TOTAL_PAGES
 
 const SCENE_Y_OFFSETS = computeYOffsets(SCENE_BOOKS)
 
@@ -98,17 +97,18 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
   const [sceneReady, setSceneReady] = useState(false)
   const isMobile = useIsMobile()
 
-  // 이미지 로드가 너무 느릴 경우 5초 후 강제로 씬 표시
+  // 이미지 로드가 너무 느릴 경우 강제로 씬 표시
   useEffect(() => {
-    const t = setTimeout(() => setSceneReady(true), 5000)
+    const t = setTimeout(() => setSceneReady(true), isMobile ? 8500 : 5500)
     return () => clearTimeout(t)
-  }, [])
+  }, [isMobile])
   const scrollElRef = useRef<HTMLElement | null>(null)
-  const [scrollEl, setScrollEl] = useState<HTMLElement | null>(null)
+  const [scrollElVersion, setScrollElVersion] = useState(0)
   const aboutProgressRef = useRef(0)
   const aboutPanelRef = useRef<HTMLDivElement>(null)
   const sidebarRef = useRef<HTMLElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
+  const scrollMetricsRef = useRef({ bookScrollFraction: 0, totalPages: 1 })
 
   // 3D scroll.offset 기반으로 업데이트된 aboutProgressRef를 rAF로 DOM에 직접 반영
   useEffect(() => {
@@ -139,12 +139,19 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
       if (!e.touches.length) return
       const el = scrollElRef.current
       if (!el) return
+      e.preventDefault()
       const delta = startY - e.touches[0].clientY
       startY = e.touches[0].clientY
-      el.scrollTop += delta
+      if (delta < 0) {
+        const { bookScrollFraction, totalPages } = scrollMetricsRef.current
+        const targetTop = Math.max(0, bookScrollFraction * 0.84 * (totalPages - 1) * window.innerHeight)
+        el.scrollTo({ top: targetTop, behavior: 'smooth' })
+      } else {
+        el.scrollTop += delta
+      }
     }
     panel.addEventListener('touchstart', onTouchStart, { passive: true })
-    panel.addEventListener('touchmove', onTouchMove, { passive: true })
+    panel.addEventListener('touchmove', onTouchMove, { passive: false })
     return () => {
       panel.removeEventListener('touchstart', onTouchStart)
       panel.removeEventListener('touchmove', onTouchMove)
@@ -156,6 +163,13 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
   const selectedPalette = selectedIdx >= 0 ? PALETTES[selectedIdx % PALETTES.length] : null
   const selectedCoverSrc = selectedIdx >= 0 ? SCENE_BOOKS[selectedIdx].cover : undefined
   const dominantColor = useDominantColor(selectedCoverSrc)
+  const scrollPageFactor = isMobile ? MOBILE_SCROLL_PAGE_FACTOR : DESKTOP_SCROLL_PAGE_FACTOR
+  const bookPages = BOOKS.length * scrollPageFactor
+  const totalPages = bookPages + EXTRA_PAGES
+  const bookScrollFraction = bookPages / totalPages
+  useEffect(() => {
+    scrollMetricsRef.current = { bookScrollFraction, totalPages }
+  }, [bookScrollFraction, totalPages])
 
   // URL ↔ state sync
   const hasInitialized = useRef(false)
@@ -192,6 +206,14 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
     return () => window.removeEventListener('popstate', onPopState)
   }, [])
 
+  const scrollToBook = useCallback((index: number, instant = false) => {
+    const el = scrollElRef.current
+    if (!el) return
+    const last = SCENE_Y_OFFSETS[SCENE_Y_OFFSETS.length - 1]
+    const scrollFraction = index === 0 ? 0 : SCENE_Y_OFFSETS[index] / last
+    el.scrollTo({ top: scrollFraction * bookScrollFraction * (totalPages - 1) * window.innerHeight, behavior: instant ? 'instant' : 'smooth' })
+  }, [bookScrollFraction, totalPages])
+
   // 상세 닫힐 때 스크롤 위치를 마지막 책 위치로 즉시 맞춤 (애니메이션 없이)
   useEffect(() => {
     if (selectedId === null && prevSelectedId.current !== null) {
@@ -199,21 +221,26 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
       if (idx >= 0) scrollToBook(idx, true)
     }
     prevSelectedId.current = selectedId
-  }, [selectedId])
+  }, [scrollToBook, selectedId])
 
-  // 모바일 상세 열렸을 때 drei scroll.el을 잠궈 책 목록이 스크롤되지 않게 함
+  // 상세 열렸을 때 drei scroll.el을 잠궈 책 배경이 스크롤되지 않게 함
   // scrollEl state에 의존해 scroll.el 등록 후에도 effect가 재실행됨 (null race 방지)
   useEffect(() => {
-    if (!isMobile || !selectedId || !scrollEl) return
-    const origOverflow = scrollEl.style.overflow
-    const origPointerEvents = scrollEl.style.pointerEvents
-    scrollEl.style.overflow = 'hidden'
-    scrollEl.style.pointerEvents = 'none'
+    if (!selectedId || !scrollElVersion) return
+    const el = scrollElRef.current
+    if (!el) return
+    const origOverflow = el.style.overflow
+    const origTouchAction = el.style.touchAction
+    const origOverscrollBehavior = el.style.overscrollBehavior
+    el.style.overflow = 'hidden'
+    el.style.touchAction = 'none'
+    el.style.overscrollBehavior = 'none'
     return () => {
-      scrollEl.style.overflow = origOverflow
-      scrollEl.style.pointerEvents = origPointerEvents
+      el.style.overflow = origOverflow
+      el.style.touchAction = origTouchAction
+      el.style.overscrollBehavior = origOverscrollBehavior
     }
-  }, [selectedId, isMobile, scrollEl])
+  }, [selectedId, scrollElVersion])
 
   // 패널 touchmove가 document/drei 리스너로 버블링되어 스크롤을 끊는 것을 막음
   useEffect(() => {
@@ -230,16 +257,8 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
 
   const handleScrollEl = useCallback((el: HTMLElement) => {
     scrollElRef.current = el
-    setScrollEl(el)
+    setScrollElVersion(version => version + 1)
   }, [])
-
-  function scrollToBook(index: number, instant = false) {
-    const el = scrollElRef.current
-    if (!el) return
-    const last = SCENE_Y_OFFSETS[SCENE_Y_OFFSETS.length - 1]
-    const scrollFraction = index === 0 ? 0 : SCENE_Y_OFFSETS[index] / last
-    el.scrollTo({ top: scrollFraction * BOOK_SCROLL_FRACTION * (TOTAL_PAGES - 1) * window.innerHeight, behavior: instant ? 'instant' : 'smooth' })
-  }
 
   const isMobileSelected = isMobile && !!selectedId
 
@@ -252,13 +271,13 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
         top: 0, bottom: 0,
         left: isMobile ? 20 : 0,
         right: isMobile ? 20 : 0,
-        zIndex: isMobileSelected ? 45 : 0,
+        zIndex: isMobileSelected ? 40 : 0,
         pointerEvents: isMobileSelected ? 'none' : 'auto',
         opacity: sceneReady ? 1 : 0,
         transform: sceneReady ? 'translateY(0)' : 'translateY(-48px)',
         transition: 'opacity 1.0s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)',
       }}>
-        <BookshelfScene books={SCENE_BOOKS} onSelect={handleSelect} onScrollEl={handleScrollEl} selectedId={selectedId} aboutProgressRef={aboutProgressRef} onReady={() => setSceneReady(true)} isMobile={isMobile} />
+        <BookshelfScene books={SCENE_BOOKS} onSelect={handleSelect} onScrollEl={handleScrollEl} selectedId={selectedId} aboutProgressRef={aboutProgressRef} onReady={() => setSceneReady(true)} isMobile={isMobile} scrollPageFactor={scrollPageFactor} />
       </div>
 
       {/* ── 모바일 선택 시 전체 배경 오버레이 (패널 배경색으로 화면 통일) ── */}
@@ -284,6 +303,26 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
         transition: 'opacity 0.3s ease',
         pointerEvents: 'none',
       }} />
+
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 90,
+        background: BG,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#c8b89a',
+        fontFamily: SERIF,
+        fontStyle: 'italic',
+        fontWeight: 600,
+        fontSize: '1rem',
+        opacity: sceneReady ? 0 : 1,
+        pointerEvents: sceneReady ? 'none' : 'auto',
+        transition: 'opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1)',
+      }}>
+        Fig.1 Books
+      </div>
 
       {/* ── 헤더 ── */}
       <header
@@ -396,15 +435,15 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
         right: 'var(--book-detail-right)', top: 'var(--book-detail-top)', bottom: 'var(--book-detail-bottom)', left: 'var(--book-detail-left)',
         width: 'var(--book-detail-width)',
         height: 'var(--book-detail-height)',
-        zIndex: 40,
+        zIndex: isMobileSelected ? 55 : 40,
         transform: selectedBook ? 'var(--book-detail-open-transform)' : 'var(--book-detail-closed-transform)',
         transition: 'transform 0.55s cubic-bezier(0.16, 1, 0.3, 1)',
         pointerEvents: selectedBook ? 'auto' : 'none',
-        background: isMobileSelected ? 'transparent' : (dominantColor ?? (selectedPalette ? `${selectedPalette.face}f0` : '#1c1714f0')),
-        backdropFilter: isMobileSelected ? 'none' : 'blur(24px)',
-        WebkitBackdropFilter: isMobileSelected ? 'none' : 'blur(24px)',
+        background: dominantColor ?? (selectedPalette ? `${selectedPalette.face}f5` : '#1c1714f5'),
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
         borderLeft: `1px solid ${selectedPalette?.text ?? '#c8b89a'}1a`,
-        overflowY: 'scroll',
+        overflowY: 'auto',
         WebkitOverflowScrolling: 'touch' as 'auto',
         touchAction: 'pan-y',
         overscrollBehavior: 'contain',
@@ -469,7 +508,17 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
       {/* ── About 패널 (스크롤 맨 아래에서 올라옴) ── */}
       <div
         ref={aboutPanelRef}
-        onWheel={(e) => { if (scrollElRef.current) scrollElRef.current.scrollTop += e.deltaY }}
+        onWheel={(e) => {
+          e.preventDefault()
+          const el = scrollElRef.current
+          if (!el) return
+          if (e.deltaY < 0) {
+            const targetTop = Math.max(0, bookScrollFraction * 0.84 * (totalPages - 1) * window.innerHeight)
+            el.scrollTo({ top: targetTop, behavior: 'smooth' })
+          } else {
+            el.scrollTop += e.deltaY
+          }
+        }}
         style={{
           position: 'fixed',
           bottom: 0, left: 0, right: 0,
@@ -482,6 +531,7 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
           justifyContent: 'center',
           padding: isMobile ? '0 28px' : '0 max(48px, 8vw)',
           pointerEvents: 'none',
+          touchAction: 'none',
         }}>
         <div style={{
           fontSize: '0.7rem', letterSpacing: '0.25em', color: '#1c1714',

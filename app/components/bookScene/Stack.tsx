@@ -7,7 +7,7 @@ import type { Group } from 'three'
 import { type BookItem, computeYOffsets } from '../../lib/bookUtils'
 import { Book } from './Book'
 
-export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, snapCameraRef, aboutProgressRef, onBooksReady, isMobile }: {
+export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, snapCameraRef, aboutProgressRef, onBooksReady, isMobile, scrollPageFactor }: {
   books: BookItem[]
   onSelect: (book: BookItem) => void
   onScrollEl?: (el: HTMLElement) => void
@@ -17,6 +17,7 @@ export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, sna
   aboutProgressRef: React.MutableRefObject<number>
   onBooksReady?: () => void
   isMobile?: boolean
+  scrollPageFactor: number
 }) {
   const group = useRef<Group>(null)
   const scroll = useScroll()
@@ -27,17 +28,19 @@ export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, sna
   const bookGroupRefs = useRef<(Group | null)[]>([])
 
   const yOffsets = useMemo(() => computeYOffsets(books), [books])
+  const initialLoadRange = 16
+  const visibleRange = 22
+  const preloadRange = 18
 
   const [loadedSet, setLoadedSet] = useState<Set<number>>(() => {
     const centerLocal = 0.5 / 0.9
     const initial = new Set<number>()
-    yOffsets.forEach((y, i) => { if (Math.abs(y - centerLocal) < 16) initial.add(i) })
+    yOffsets.forEach((y, i) => { if (Math.abs(y - centerLocal) < initialLoadRange) initial.add(i) })
     return initial
   })
   const lastOffsetRef = useRef(-1)
 
-  // 처음 화면에 보이는 책 중 최대 3권이 커버 이미지를 로드하면 onBooksReady 발화
-  const readyThreshold = Math.min(3, books.length)
+  const readyThreshold = Math.min(isMobile ? 8 : 4, books.length)
   const handleCoverLoad = useCallback(() => {
     if (booksReadyFiredRef.current) return
     coverLoadCountRef.current++
@@ -49,11 +52,10 @@ export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, sna
 
   useEffect(() => { onScrollEl?.(scroll.el) }, [scroll.el, onScrollEl])
 
-  useEffect(() => {
-    if (selectedIndex !== null) {
-      setLoadedSet(prev => prev.has(selectedIndex) ? prev : new Set([...prev, selectedIndex]))
-    }
-  }, [selectedIndex])
+  const renderLoadedSet = useMemo(() => {
+    if (selectedIndex === null || loadedSet.has(selectedIndex)) return loadedSet
+    return new Set([...loadedSet, selectedIndex])
+  }, [loadedSet, selectedIndex])
 
   useFrame(() => {
     if (!group.current) return
@@ -61,7 +63,7 @@ export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, sna
     const centerLocal = (0.5 - group.current.position.y) / 0.9
 
     // 화면 밖 책은 visible=false로 draw call 제거 (선택 중엔 모두 표시)
-    const visRange = selectedIndex !== null ? Infinity : 22
+    const visRange = selectedIndex !== null ? Infinity : visibleRange
     bookGroupRefs.current.forEach((ref, i) => {
       if (ref) ref.visible = Math.abs(yOffsets[i] - centerLocal) < visRange
     })
@@ -75,7 +77,8 @@ export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, sna
     }
     targetYRef.current = 0.5
     const travel = -yOffsets[books.length - 1]
-    const bookScrollFraction = books.length * 0.4 / (books.length * 0.4 + 1.0)
+    const bookPages = books.length * scrollPageFactor
+    const bookScrollFraction = bookPages / (bookPages + 1.0)
 
     // about 패널: 마지막 책이 센터에 도달하기 직전(92%)부터 시작, scroll.offset 기반으로 동기화
     const aboutThreshold = bookScrollFraction * 0.92
@@ -97,7 +100,7 @@ export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, sna
     lastOffsetRef.current = scroll.offset
 
     const toLoad: number[] = []
-    yOffsets.forEach((y, i) => { if (Math.abs(y - centerLocal) < 18) toLoad.push(i) })
+    yOffsets.forEach((y, i) => { if (Math.abs(y - centerLocal) < preloadRange) toLoad.push(i) })
     setLoadedSet(prev => {
       const hasNew = toLoad.some(i => !prev.has(i))
       if (!hasNew) return prev
@@ -109,7 +112,7 @@ export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, sna
     <group ref={group} position={[0, 0, 0]} scale={0.9}>
       {books.map((book, i) => (
         <group key={book.id} position={[0, yOffsets[i], 0]} ref={el => { bookGroupRefs.current[i] = el }}>
-          {loadedSet.has(i) && (
+          {renderLoadedSet.has(i) && (
             <Suspense fallback={null}>
               <Book
                 book={book} index={i}
