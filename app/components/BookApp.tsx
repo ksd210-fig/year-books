@@ -387,7 +387,7 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
         className="book-detail-panel"
         data-selected={selectedBook ? 'true' : 'false'}
         style={{
-        position: isMobileSelected ? 'absolute' : 'fixed',
+        position: 'fixed',
         right: 'var(--book-detail-right)', top: 'var(--book-detail-top)', bottom: 'var(--book-detail-bottom)', left: 'var(--book-detail-left)',
         width: 'var(--book-detail-width)',
         height: 'var(--book-detail-height)',
