@@ -26,3 +26,12 @@ export function bookDims(book: BookItem) {
   const h = book.mmD ? +(book.mmD * MM_SCALE).toFixed(3) : DEFAULT_H
   return { w, h, d }
 }
+
+export function computeYOffsets(books: BookItem[]): number[] {
+  const dims = books.map(b => bookDims(b).h)
+  const offsets: number[] = [0]
+  for (let i = 0; i < books.length - 1; i++) {
+    offsets.push(offsets[i] - dims[i] / 2 - dims[i + 1] / 2 - BOOK_GAP)
+  }
+  return offsets
+}

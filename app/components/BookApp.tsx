@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { BOOKS } from '@/data/books'
-import { bookDims, BOOK_GAP, type BookItem } from '../lib/bookUtils'
+import { bookDims, BOOK_GAP, computeYOffsets, type BookItem } from '../lib/bookUtils'
 import { BookshelfScene } from './BookshelfScene'
 
 const PALETTES = [
@@ -24,10 +24,14 @@ const PALETTES = [
 const BG = '#1c1714'
 const SERIF = "'EB Garamond', Georgia, 'Times New Roman', serif"
 
+const _dominantColorCache = new Map<string, string>()
+
 function useDominantColor(src: string | undefined): string | null {
-  const [color, setColor] = useState<string | null>(null)
+  const [color, setColor] = useState<string | null>(() => src ? (_dominantColorCache.get(src) ?? null) : null)
   useEffect(() => {
     if (!src) return
+    const cached = _dominantColorCache.get(src)
+    if (cached) { setColor(cached); return }
     let cancelled = false
     const img = new Image()
     img.onload = () => {
@@ -42,7 +46,9 @@ function useDominantColor(src: string | undefined): string | null {
         r += data[i]; g += data[i + 1]; b += data[i + 2]; n++
       }
       const f = 0.32
-      setColor(`rgb(${Math.round(r / n * f)},${Math.round(g / n * f)},${Math.round(b / n * f)})`)
+      const result = `rgb(${Math.round(r / n * f)},${Math.round(g / n * f)},${Math.round(b / n * f)})`
+      _dominantColorCache.set(src, result)
+      setColor(result)
     }
     img.src = src
     return () => { cancelled = true }
@@ -74,20 +80,12 @@ const EXTRA_PAGES = 1.0
 const TOTAL_PAGES = BOOK_PAGES + EXTRA_PAGES
 const BOOK_SCROLL_FRACTION = BOOK_PAGES / TOTAL_PAGES
 
-const SCENE_Y_OFFSETS = (() => {
-  const dims = SCENE_BOOKS.map(b => bookDims(b).h)
-  const offsets = [0]
-  for (let i = 0; i < SCENE_BOOKS.length - 1; i++) {
-    offsets.push(offsets[i] - dims[i] / 2 - dims[i + 1] / 2 - BOOK_GAP)
-  }
-  return offsets
-})()
+const SCENE_Y_OFFSETS = computeYOffsets(SCENE_BOOKS)
 
 function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false)
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768)
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
-    check()
     window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
   }, [])
@@ -106,6 +104,7 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
     return () => clearTimeout(t)
   }, [])
   const scrollElRef = useRef<HTMLElement | null>(null)
+  const [scrollEl, setScrollEl] = useState<HTMLElement | null>(null)
   const aboutProgressRef = useRef(0)
   const aboutPanelRef = useRef<HTMLDivElement>(null)
   const sidebarRef = useRef<HTMLElement>(null)
@@ -135,8 +134,9 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
     const panel = aboutPanelRef.current
     if (!panel) return
     let startY = 0
-    const onTouchStart = (e: TouchEvent) => { startY = e.touches[0].clientY }
+    const onTouchStart = (e: TouchEvent) => { if (e.touches.length) startY = e.touches[0].clientY }
     const onTouchMove = (e: TouchEvent) => {
+      if (!e.touches.length) return
       const el = scrollElRef.current
       if (!el) return
       const delta = startY - e.touches[0].clientY
@@ -202,12 +202,13 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
   }, [selectedId])
 
   // 모바일 상세 열렸을 때 drei scroll.el을 잠궈 책 목록이 스크롤되지 않게 함
+  // scrollEl state에 의존해 scroll.el 등록 후에도 effect가 재실행됨 (null race 방지)
   useEffect(() => {
-    const el = scrollElRef.current
-    if (!el || !isMobile) return
-    el.style.overflow = selectedId ? 'hidden' : ''
-    return () => { el.style.overflow = '' }
-  }, [selectedId, isMobile])
+    if (!isMobile || !selectedId || !scrollEl) return
+    const orig = scrollEl.style.overflow
+    scrollEl.style.overflow = 'hidden'
+    return () => { scrollEl.style.overflow = orig }
+  }, [selectedId, isMobile, scrollEl])
 
   // 패널 touchmove가 document/drei 리스너로 버블링되어 스크롤을 끊는 것을 막음
   useEffect(() => {
@@ -224,6 +225,7 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
 
   const handleScrollEl = useCallback((el: HTMLElement) => {
     scrollElRef.current = el
+    setScrollEl(el)
   }, [])
 
   function scrollToBook(index: number, instant = false) {
@@ -234,6 +236,8 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
     el.scrollTo({ top: scrollFraction * BOOK_SCROLL_FRACTION * (TOTAL_PAGES - 1) * window.innerHeight, behavior: instant ? 'instant' : 'smooth' })
   }
 
+  const isMobileSelected = isMobile && !!selectedId
+
   return (
     <div className="year-books-shell" style={{ position: 'relative', height: '100vh', width: '100%', overflow: 'hidden', background: BG }}>
 
@@ -243,8 +247,8 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
         top: 0, bottom: 0,
         left: isMobile ? 20 : 0,
         right: isMobile ? 20 : 0,
-        zIndex: (isMobile && !!selectedId) ? 45 : 0,
-        pointerEvents: (isMobile && !!selectedId) ? 'none' : 'auto',
+        zIndex: isMobileSelected ? 45 : 0,
+        pointerEvents: isMobileSelected ? 'none' : 'auto',
         opacity: sceneReady ? 1 : 0,
         transform: sceneReady ? 'translateY(0)' : 'translateY(-48px)',
         transition: 'opacity 1.0s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -383,7 +387,7 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
         className="book-detail-panel"
         data-selected={selectedBook ? 'true' : 'false'}
         style={{
-        position: (isMobile && !!selectedId) ? 'absolute' : 'fixed',
+        position: isMobileSelected ? 'absolute' : 'fixed',
         right: 'var(--book-detail-right)', top: 'var(--book-detail-top)', bottom: 'var(--book-detail-bottom)', left: 'var(--book-detail-left)',
         width: 'var(--book-detail-width)',
         height: 'var(--book-detail-height)',
@@ -391,9 +395,9 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
         transform: selectedBook ? 'var(--book-detail-open-transform)' : 'var(--book-detail-closed-transform)',
         transition: 'transform 0.55s cubic-bezier(0.16, 1, 0.3, 1)',
         pointerEvents: selectedBook ? 'auto' : 'none',
-        background: (isMobile && !!selectedId) ? 'transparent' : (dominantColor ?? (selectedPalette ? `${selectedPalette.face}f0` : '#1c1714f0')),
-        backdropFilter: (isMobile && !!selectedId) ? 'none' : 'blur(24px)',
-        WebkitBackdropFilter: (isMobile && !!selectedId) ? 'none' : 'blur(24px)',
+        background: isMobileSelected ? 'transparent' : (dominantColor ?? (selectedPalette ? `${selectedPalette.face}f0` : '#1c1714f0')),
+        backdropFilter: isMobileSelected ? 'none' : 'blur(24px)',
+        WebkitBackdropFilter: isMobileSelected ? 'none' : 'blur(24px)',
         borderLeft: `1px solid ${selectedPalette?.text ?? '#c8b89a'}1a`,
         overflowY: 'scroll',
         WebkitOverflowScrolling: 'touch' as 'auto',

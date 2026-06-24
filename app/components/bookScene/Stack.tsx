@@ -4,7 +4,7 @@ import { Suspense, useRef, useMemo, useState, useEffect, useCallback } from 'rea
 import { useFrame } from '@react-three/fiber'
 import { useScroll } from '@react-three/drei'
 import type { Group } from 'three'
-import { type BookItem, bookDims, BOOK_GAP } from '../../lib/bookUtils'
+import { type BookItem, computeYOffsets } from '../../lib/bookUtils'
 import { Book } from './Book'
 
 export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, snapCameraRef, aboutProgressRef, onBooksReady, isMobile }: {
@@ -26,14 +26,7 @@ export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, sna
   const wasSelectedRef = useRef(false)
   const bookGroupRefs = useRef<(Group | null)[]>([])
 
-  const yOffsets = useMemo(() => {
-    const dims = books.map(b => bookDims(b).h)
-    const offsets: number[] = [0]
-    for (let i = 0; i < books.length - 1; i++) {
-      offsets.push(offsets[i] - dims[i] / 2 - dims[i + 1] / 2 - BOOK_GAP)
-    }
-    return offsets
-  }, [books])
+  const yOffsets = useMemo(() => computeYOffsets(books), [books])
 
   const [loadedSet, setLoadedSet] = useState<Set<number>>(() => {
     const centerLocal = 0.5 / 0.9

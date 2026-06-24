@@ -50,20 +50,9 @@ html, body {
   }
 
   .book-detail-panel {
-    top: auto !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    width: 100vw !important;
-    height: 40vh !important;
-    padding: 20px 24px max(24px, env(safe-area-inset-bottom)) !important;
-    justify-content: flex-start !important;
+    /* position/size는 CSS 변수로 인라인 스타일에서 관리 — !important 불필요 */
     border-left: 0 !important;
     border-top: 1px solid rgba(232, 223, 200, 0.16);
-    overflow-y: scroll !important;
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
-    overscroll-behavior: contain;
   }
 
   .book-detail-panel[data-selected="true"] {
