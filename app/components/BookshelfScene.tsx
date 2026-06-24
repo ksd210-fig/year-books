@@ -29,7 +29,7 @@ export function BookshelfScene({ books, onSelect, onScrollEl, selectedId, aboutP
       <directionalLight position={[1, -2, -4]} intensity={0.15} color="#c4a97a" />
       <ambientLight intensity={0.18} />
       <Suspense fallback={null}>
-        <ScrollControls pages={books.length * 0.4 + 1.0} damping={0.12}>
+        <ScrollControls pages={books.length * 0.4 + 1.0} damping={0.2}>
           <Stack books={books} onSelect={onSelect} onScrollEl={onScrollEl} selectedId={selectedId} targetYRef={targetYRef} snapCameraRef={snapCameraRef} aboutProgressRef={aboutProgressRef} onBooksReady={onReady} isMobile={isMobile} />
         </ScrollControls>
       </Suspense>
