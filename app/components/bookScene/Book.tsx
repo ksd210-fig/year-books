@@ -10,7 +10,7 @@ import { type BookItem, bookDims } from '../../lib/bookUtils'
 import { ImageCoverMaterial, useClothNormalMap, useSharedPageEdgeMaterial } from './materials'
 
 export function Book({
-  book, index, onSelect, isSelected, selectedIndex, onCoverLoad,
+  book, index, onSelect, isSelected, selectedIndex, onCoverLoad, isMobile,
 }: {
   book: BookItem
   index: number
@@ -18,6 +18,7 @@ export function Book({
   isSelected: boolean
   selectedIndex: number | null
   onCoverLoad?: () => void
+  isMobile?: boolean
 }) {
   const group = useRef<Group>(null)
   const [hovered, setHovered] = useState(false)
@@ -199,21 +200,25 @@ export function Book({
       group.current.rotation.x += (targetRx - group.current.rotation.x) * lerpF
       group.current.rotation.y += (targetRy - group.current.rotation.y) * lerpF
       group.current.rotation.z += (-Math.PI / 10 - group.current.rotation.z) * 0.07
-      group.current.position.x += (-1.7 - group.current.position.x) * 0.07
+      // 모바일: 중앙 유지 (상세 패널이 하단에서 올라옴), 데스크탑: 왼쪽으로 이동
+      const targetX = isMobile ? 0 : -1.7
+      group.current.position.x += (targetX - group.current.position.x) * 0.07
       group.current.position.y += (0 - group.current.position.y) * 0.07
       group.current.position.z += (0 - group.current.position.z) * 0.07
     } else if (isAbove) {
       group.current.rotation.x += (Math.PI / 2 - group.current.rotation.x) * 0.1
       group.current.rotation.y += (Math.PI / 2 - group.current.rotation.y) * 0.1
       group.current.rotation.z += (-Math.PI / 2 - group.current.rotation.z) * 0.1
-      group.current.position.x += (-1.7 - group.current.position.x) * 0.1
+      // 모바일: 화면 위로, 데스크탑: 왼쪽 위로
+      group.current.position.x += ((isMobile ? 0 : -1.7) - group.current.position.x) * 0.1
       group.current.position.y += (14 - group.current.position.y) * 0.08
       group.current.position.z += (0 - group.current.position.z) * 0.1
     } else if (isBelow) {
       group.current.rotation.x += (Math.PI / 2 - group.current.rotation.x) * 0.1
       group.current.rotation.y += (Math.PI / 2 - group.current.rotation.y) * 0.1
       group.current.rotation.z += (-Math.PI / 2 - group.current.rotation.z) * 0.1
-      group.current.position.x += (-1.7 - group.current.position.x) * 0.1
+      // 모바일: 화면 아래로, 데스크탑: 왼쪽 아래로
+      group.current.position.x += ((isMobile ? 0 : -1.7) - group.current.position.x) * 0.1
       group.current.position.y += (-14 - group.current.position.y) * 0.08
       group.current.position.z += (0 - group.current.position.z) * 0.1
     } else {

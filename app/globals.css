@@ -38,8 +38,8 @@ html, body {
     --book-detail-bottom: 0;
     --book-detail-left: 0;
     --book-detail-width: 100vw;
-    --book-detail-height: min(58vh, 520px);
-    --book-detail-padding: 28px 28px max(32px, env(safe-area-inset-bottom));
+    --book-detail-height: min(44vh, 400px);
+    --book-detail-padding: 24px 24px max(28px, env(safe-area-inset-bottom));
     --book-detail-justify: flex-start;
     --book-detail-open-transform: translateY(0);
     --book-detail-closed-transform: translateY(100%);
@@ -55,8 +55,8 @@ html, body {
     bottom: 0 !important;
     left: 0 !important;
     width: 100vw !important;
-    height: min(58vh, 520px) !important;
-    padding: 28px 28px max(32px, env(safe-area-inset-bottom)) !important;
+    height: min(44vh, 400px) !important;
+    padding: 24px 24px max(28px, env(safe-area-inset-bottom)) !important;
     justify-content: flex-start !important;
     border-left: 0 !important;
     border-top: 1px solid rgba(232, 223, 200, 0.16);

@@ -83,10 +83,22 @@ const SCENE_Y_OFFSETS = (() => {
   return offsets
 })()
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+  return isMobile
+}
+
 export default function BookApp({ initialId }: { initialId?: string | null }) {
   const [selectedId, setSelectedId] = useState<string | null>(initialId ?? null)
   const [hoveredAnchor, setHoveredAnchor] = useState<number | null>(null)
   const [sceneReady, setSceneReady] = useState(false)
+  const isMobile = useIsMobile()
 
   // 이미지 로드가 너무 느릴 경우 5초 후 강제로 씬 표시
   useEffect(() => {
@@ -189,12 +201,16 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
 
       {/* ── 3D 책장 씬 ── */}
       <div style={{
-        position: 'absolute', inset: 0, zIndex: 0,
+        position: 'absolute',
+        top: 0, bottom: 0,
+        left: isMobile ? 20 : 0,
+        right: isMobile ? 20 : 0,
+        zIndex: 0,
         opacity: sceneReady ? 1 : 0,
         transform: sceneReady ? 'translateY(0)' : 'translateY(-48px)',
         transition: 'opacity 1.0s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)',
       }}>
-        <BookshelfScene books={SCENE_BOOKS} onSelect={handleSelect} onScrollEl={handleScrollEl} selectedId={selectedId} aboutProgressRef={aboutProgressRef} onReady={() => setSceneReady(true)} />
+        <BookshelfScene books={SCENE_BOOKS} onSelect={handleSelect} onScrollEl={handleScrollEl} selectedId={selectedId} aboutProgressRef={aboutProgressRef} onReady={() => setSceneReady(true)} isMobile={isMobile} />
       </div>
 
       {/* ── 사이드바 호버 딤 오버레이 ── */}
@@ -399,7 +415,7 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
-          padding: '0 max(48px, 8vw)',
+          padding: isMobile ? '0 28px' : '0 max(48px, 8vw)',
           pointerEvents: 'none',
         }}>
         <div style={{
