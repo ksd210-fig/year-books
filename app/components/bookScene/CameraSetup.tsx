@@ -14,7 +14,7 @@ export function CameraSetup({ targetYRef, snapCameraRef, isMobile }: {
   const cameraRef = useRef<PerspectiveCameraType>(null)
   const lookAtRef = useRef(new THREE.Vector3(0, -0.3, 0))
   const fov = isMobile ? 48 : 30
-  const camZ = isMobile ? 12 : 14
+  const camZ = isMobile ? 16 : 14
 
   useFrame(() => {
     const camera = cameraRef.current

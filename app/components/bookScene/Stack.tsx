@@ -77,7 +77,7 @@ export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, sna
       wasSelectedRef.current = true
       aboutProgressRef.current = 0
       const bookWorldY = group.current.position.y + yOffsets[selectedIndex] * 0.9
-      targetYRef.current = bookWorldY + (isMobile ? 1.2 : 0.5)
+      targetYRef.current = bookWorldY + (isMobile ? 3.5 : 0.5)
       return
     }
     targetYRef.current = 0.5

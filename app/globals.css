@@ -38,8 +38,8 @@ html, body {
     --book-detail-bottom: 0;
     --book-detail-left: 0;
     --book-detail-width: 100vw;
-    --book-detail-height: min(44vh, 400px);
-    --book-detail-padding: 24px 24px max(28px, env(safe-area-inset-bottom));
+    --book-detail-height: 40vh;
+    --book-detail-padding: 20px 24px max(24px, env(safe-area-inset-bottom));
     --book-detail-justify: flex-start;
     --book-detail-open-transform: translateY(0);
     --book-detail-closed-transform: translateY(100%);
@@ -55,11 +55,14 @@ html, body {
     bottom: 0 !important;
     left: 0 !important;
     width: 100vw !important;
-    height: min(44vh, 400px) !important;
-    padding: 24px 24px max(28px, env(safe-area-inset-bottom)) !important;
+    height: 40vh !important;
+    padding: 20px 24px max(24px, env(safe-area-inset-bottom)) !important;
     justify-content: flex-start !important;
     border-left: 0 !important;
     border-top: 1px solid rgba(232, 223, 200, 0.16);
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
   }
 
   .book-detail-panel[data-selected="true"] {

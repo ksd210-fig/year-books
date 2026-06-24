@@ -202,8 +202,9 @@ export function Book({
       group.current.rotation.z += (-Math.PI / 10 - group.current.rotation.z) * 0.07
       // 모바일: 중앙 유지 (상세 패널이 하단에서 올라옴), 데스크탑: 왼쪽으로 이동
       const targetX = isMobile ? 0 : -1.7
+      const targetBookY = isMobile ? 5.8 : 0
       group.current.position.x += (targetX - group.current.position.x) * 0.07
-      group.current.position.y += (0 - group.current.position.y) * 0.07
+      group.current.position.y += (targetBookY - group.current.position.y) * 0.07
       group.current.position.z += (0 - group.current.position.z) * 0.07
     } else if (isAbove) {
       group.current.rotation.x += (Math.PI / 2 - group.current.rotation.x) * 0.1

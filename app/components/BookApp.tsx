@@ -205,13 +205,29 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
         top: 0, bottom: 0,
         left: isMobile ? 20 : 0,
         right: isMobile ? 20 : 0,
-        zIndex: 0,
+        zIndex: (isMobile && !!selectedId) ? 45 : 0,
+        pointerEvents: (isMobile && !!selectedId) ? 'none' : 'auto',
         opacity: sceneReady ? 1 : 0,
         transform: sceneReady ? 'translateY(0)' : 'translateY(-48px)',
         transition: 'opacity 1.0s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)',
       }}>
         <BookshelfScene books={SCENE_BOOKS} onSelect={handleSelect} onScrollEl={handleScrollEl} selectedId={selectedId} aboutProgressRef={aboutProgressRef} onReady={() => setSceneReady(true)} isMobile={isMobile} />
       </div>
+
+      {/* ── 모바일 선택 시 전체 배경 오버레이 (패널 배경색으로 화면 통일) ── */}
+      {isMobile && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 35,
+          background: dominantColor ?? (selectedPalette ? `${selectedPalette.face}e8` : '#1c1714e8'),
+          backdropFilter: 'blur(28px)',
+          WebkitBackdropFilter: 'blur(28px)',
+          opacity: selectedBook ? 1 : 0,
+          pointerEvents: 'none',
+          transition: 'opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1)',
+        }} />
+      )}
 
       {/* ── 사이드바 호버 딤 오버레이 ── */}
       <div style={{
@@ -324,8 +340,12 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
       </div>
 
       {/* ── 상세 슬라이드 패널 (오른쪽) ── */}
-      <div className="book-detail-panel" data-selected={selectedBook ? 'true' : 'false'} style={{
-        position: 'fixed',
+      <div
+        className="book-detail-panel"
+        data-selected={selectedBook ? 'true' : 'false'}
+        onTouchMove={(e) => { if (selectedBook && isMobile) e.stopPropagation() }}
+        style={{
+        position: (isMobile && !!selectedId) ? 'absolute' : 'fixed',
         right: 'var(--book-detail-right)', top: 'var(--book-detail-top)', bottom: 'var(--book-detail-bottom)', left: 'var(--book-detail-left)',
         width: 'var(--book-detail-width)',
         height: 'var(--book-detail-height)',
@@ -333,11 +353,13 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
         transform: selectedBook ? 'var(--book-detail-open-transform)' : 'var(--book-detail-closed-transform)',
         transition: 'transform 0.55s cubic-bezier(0.16, 1, 0.3, 1)',
         pointerEvents: selectedBook ? 'auto' : 'none',
-        background: dominantColor ?? (selectedPalette ? `${selectedPalette.face}f0` : '#1c1714f0'),
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
+        background: (isMobile && !!selectedId) ? 'transparent' : (dominantColor ?? (selectedPalette ? `${selectedPalette.face}f0` : '#1c1714f0')),
+        backdropFilter: (isMobile && !!selectedId) ? 'none' : 'blur(24px)',
+        WebkitBackdropFilter: (isMobile && !!selectedId) ? 'none' : 'blur(24px)',
         borderLeft: `1px solid ${selectedPalette?.text ?? '#c8b89a'}1a`,
         overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch' as 'auto',
+        touchAction: 'pan-y',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'var(--book-detail-justify)',
@@ -348,10 +370,7 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
       }}>
         {selectedBook && selectedPalette && (
           <>
-            <div style={{
-              fontSize: 'calc(18px + 0.6vw)', fontStyle: 'italic', fontWeight: 700,
-              lineHeight: 1.25, marginBottom: 12,
-            }}>
+            <div style={{ fontSize: 'calc(18px + 0.6vw)', fontStyle: 'italic', fontWeight: 700, lineHeight: 1.25, marginBottom: 12 }}>
               {selectedBook.titleKo}
             </div>
             {selectedBook.titleEn && (
@@ -369,8 +388,6 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
             <div style={{ fontSize: 15, lineHeight: 1.78, opacity: 0.82, marginBottom: 28 }}>
               {selectedBook.description}
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 32 }}>
-            </div>
             {selectedBook.buyLink && (
               <a
                 href={selectedBook.buyLink}
@@ -382,7 +399,7 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
                   padding: '0 0 0 16px',
                   color: 'currentColor', textDecoration: 'none',
                   fontSize: 15, fontFamily: SERIF, fontWeight: 700,
-                  cursor: 'pointer',
+                  cursor: 'pointer', marginBottom: 32,
                 }}
               >
                 <span>구매하기</span>

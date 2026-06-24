@@ -22,8 +22,7 @@ export function BookshelfScene({ books, onSelect, onScrollEl, selectedId, aboutP
   const targetYRef = useRef(0.5)
   const snapCameraRef = useRef(false)
   return (
-    <Canvas dpr={[1, 2]} gl={{ antialias: true }}>
-      <color attach="background" args={['#1c1714']} />
+    <Canvas dpr={[1, 2]} gl={{ antialias: true, alpha: true }} onCreated={({ gl, scene }) => { gl.setClearColor(0x000000, 0); scene.background = null; }}>
       <CameraSetup targetYRef={targetYRef} snapCameraRef={snapCameraRef} isMobile={isMobile} />
       <directionalLight position={[2, 3, 12]} intensity={2.2} color="#fff8f0" />
       <directionalLight position={[-5, 2, 5]} intensity={0.4} color="#e8eeff" />
