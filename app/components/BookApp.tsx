@@ -179,6 +179,14 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
     prevSelectedId.current = selectedId
   }, [selectedId])
 
+  // 모바일 상세 열렸을 때 drei scroll.el을 잠궈 책 목록이 스크롤되지 않게 함
+  useEffect(() => {
+    const el = scrollElRef.current
+    if (!el || !isMobile) return
+    el.style.overflow = selectedId ? 'hidden' : ''
+    return () => { el.style.overflow = '' }
+  }, [selectedId, isMobile])
+
 
   function handleSelect(book: BookItem) {
     setSelectedId(prev => prev === book.id ? null : book.id)
@@ -360,6 +368,7 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
         overflowY: 'auto',
         WebkitOverflowScrolling: 'touch' as 'auto',
         touchAction: 'pan-y',
+        overscrollBehavior: 'contain',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'var(--book-detail-justify)',

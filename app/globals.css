@@ -63,6 +63,7 @@ html, body {
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
+    overscroll-behavior: contain;
   }
 
   .book-detail-panel[data-selected="true"] {
