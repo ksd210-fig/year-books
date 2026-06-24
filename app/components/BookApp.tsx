@@ -129,6 +129,27 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
     return () => cancelAnimationFrame(rafId)
   }, [])
 
+  // About 패널 모바일 touch → scroll.el 포워딩 (푸터에서 위로 스크롤 복귀)
+  useEffect(() => {
+    const panel = aboutPanelRef.current
+    if (!panel) return
+    let startY = 0
+    const onTouchStart = (e: TouchEvent) => { startY = e.touches[0].clientY }
+    const onTouchMove = (e: TouchEvent) => {
+      const el = scrollElRef.current
+      if (!el) return
+      const delta = startY - e.touches[0].clientY
+      startY = e.touches[0].clientY
+      el.scrollTop += delta
+    }
+    panel.addEventListener('touchstart', onTouchStart, { passive: true })
+    panel.addEventListener('touchmove', onTouchMove, { passive: true })
+    return () => {
+      panel.removeEventListener('touchstart', onTouchStart)
+      panel.removeEventListener('touchmove', onTouchMove)
+    }
+  }, [])
+
   const selectedIdx = selectedId ? BOOKS.findIndex(b => b.id === selectedId) : -1
   const selectedBook = selectedIdx >= 0 ? BOOKS[selectedIdx] : null
   const selectedPalette = selectedIdx >= 0 ? PALETTES[selectedIdx % PALETTES.length] : null
