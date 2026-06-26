@@ -326,7 +326,7 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
 
       {/* ── 헤더 ── */}
       <header
-        onClick={() => setSelectedId(null)}
+        onClick={selectedId ? () => setSelectedId(null) : undefined}
         style={{
           position: 'fixed', top: 0, left: 0, zIndex: 50,
           padding: '0 calc(42.5px + 1.75vw)',
@@ -337,27 +337,24 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
           transform: sceneReady ? 'translateY(0)' : 'translateY(16px)',
           transition: 'opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1)',
           transitionDelay: '0.1s',
+          display: 'flex', alignItems: 'center', gap: 8,
         }}
       >
+        {selectedId && (
+          <span style={{
+            fontFamily: SERIF, fontSize: '1rem', fontWeight: 400,
+            color: 'rgba(255,255,255,0.45)', lineHeight: 1,
+            transition: 'color 0.4s',
+          }}>←</span>
+        )}
         <div style={{
           fontFamily: SERIF, fontWeight: 600, fontSize: '1.1rem',
-          color: '#c8b89a',
+          color: selectedId ? '#ffffff' : '#c8b89a',
           letterSpacing: '0.32px', lineHeight: 1.4,
           transition: 'color 0.4s',
         }}>
           Fig.1 Books
         </div>
-        {selectedId && (
-          <div style={{
-            fontFamily: SERIF, fontWeight: 600, fontStyle: 'italic',
-            fontSize: '1rem',
-            color: '#ffffff',
-            letterSpacing: '0.32px', lineHeight: 1.3,
-            transition: 'color 0.4s',
-          }}>
-            ← 목록으로
-          </div>
-        )}
       </header>
 
       {/* ── 사이드바 북 인덱스 (왼쪽) ── */}
@@ -375,6 +372,7 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
         gap: 3, alignItems: 'flex-start',
       }}>
         {BOOKS.map((book, i) => {
+          const isActive = selectedIdx >= 0 && i === selectedIdx
           const isHovered = hoveredAnchor === i
           const staggerDelay = sceneReady ? `${0.85 + i * 0.05}s` : '0s'
           return (
@@ -400,9 +398,9 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
               }}
             >
               <div style={{
-                height: 3,
-                width: isHovered ? 28 : 18,
-                background: isHovered ? '#ffffff' : '#3a2c1c',
+                height: isActive ? 4 : 3,
+                width: (isActive || isHovered) ? 28 : 18,
+                background: isActive ? '#c8b89a' : (isHovered ? '#ffffff' : '#3a2c1c'),
                 transition: 'all 0.2s ease',
                 borderRadius: 1,
                 flexShrink: 0,
@@ -410,10 +408,10 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
               <span style={{
                 fontFamily: SERIF, fontStyle: 'italic', fontWeight: 600,
                 fontSize: '0.85rem',
-                color: '#ffffff',
+                color: isActive ? '#c8b89a' : '#ffffff',
                 whiteSpace: 'nowrap',
-                opacity: isHovered ? 1 : 0.35,
-                transition: 'opacity 0.2s ease, transform 0.2s ease',
+                opacity: (isActive || isHovered) ? 1 : 0.35,
+                transition: 'opacity 0.2s ease, color 0.2s ease',
                 pointerEvents: 'none',
                 textShadow: '0 1px 4px rgba(0,0,0,0.8)',
               }}>
@@ -457,22 +455,22 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
       }}>
         {selectedBook && selectedPalette && (
           <>
-            <div style={{ fontSize: 'calc(18px + 0.6vw)', fontStyle: 'italic', fontWeight: 700, lineHeight: 1.25, marginBottom: 12 }}>
+            <div style={{ fontSize: 'calc(17px + 0.5vw)', fontStyle: 'italic', fontWeight: 700, lineHeight: 1.22, marginBottom: 14 }}>
               {selectedBook.titleKo}
             </div>
             {selectedBook.titleEn && (
-              <div style={{ fontSize: 13, opacity: 0.45, marginBottom: 16 }}>
+              <div style={{ fontSize: 12, opacity: 0.4, letterSpacing: '0.03em', marginBottom: 20 }}>
                 {selectedBook.titleEn}
               </div>
             )}
-            <div style={{ fontSize: 16, fontStyle: 'italic', opacity: 0.8, marginBottom: 6 }}>
+            <div style={{ fontSize: 14, fontStyle: 'italic', opacity: 0.75, marginBottom: 4 }}>
               {selectedBook.author}
             </div>
-            <div style={{ fontSize: 12, opacity: 0.38, letterSpacing: '0.05em', marginBottom: 24 }}>
+            <div style={{ fontSize: 11, opacity: 0.35, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 28 }}>
               {selectedBook.publisher}
             </div>
-            <div style={{ width: 36, height: 1, background: 'currentColor', opacity: 0.25, marginBottom: 24 }} />
-            <div style={{ fontSize: 15, lineHeight: 1.78, opacity: 0.82, marginBottom: 28 }}>
+            <div style={{ width: 28, height: 1, background: 'currentColor', opacity: 0.2, marginBottom: 20 }} />
+            <div style={{ fontSize: 14, lineHeight: 1.9, opacity: 0.78, marginBottom: 32 }}>
               {selectedBook.description}
             </div>
             {selectedBook.buyLink && (
@@ -483,17 +481,18 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   border: '1px solid currentColor',
-                  padding: '0 0 0 16px',
+                  padding: '0 0 0 20px',
                   color: 'currentColor', textDecoration: 'none',
-                  fontSize: 15, fontFamily: SERIF, fontWeight: 700,
-                  cursor: 'pointer', marginBottom: 32,
+                  fontSize: 14, fontFamily: SERIF, fontWeight: 700,
+                  letterSpacing: '0.04em',
+                  cursor: 'pointer', marginBottom: 40,
                 }}
               >
                 <span>구매하기</span>
                 <div style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  alignSelf: 'stretch', padding: '16px 14px',
-                  borderLeft: '1px solid currentColor', marginLeft: 16,
+                  alignSelf: 'stretch', padding: '18px 16px',
+                  borderLeft: '1px solid currentColor', marginLeft: 20,
                 }}>
                   <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
                     <path d="M1.27308 8.6948L6.64773 3.31482L6.63707 7.34714H8.38423V0.305237H1.34766L1.337 2.04174H5.37464L0 7.42171L1.27308 8.6948Z" fill="currentColor" />
@@ -504,6 +503,18 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
           </>
         )}
       </div>
+
+      {/* ── 모바일 패널 하단 스크롤 힌트 그라데이션 ── */}
+      {isMobileSelected && selectedBook && (
+        <div style={{
+          position: 'fixed',
+          bottom: 0, left: 0, right: 0,
+          height: 52,
+          zIndex: 56,
+          background: `linear-gradient(to bottom, transparent, ${dominantColor ?? (selectedPalette ? selectedPalette.face : '#1c1714')})`,
+          pointerEvents: 'none',
+        }} />
+      )}
 
       {/* ── About 패널 (스크롤 맨 아래에서 올라옴) ── */}
       <div
