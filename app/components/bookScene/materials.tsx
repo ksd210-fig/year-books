@@ -71,13 +71,11 @@ export function useClothNormalMap() {
 
 // Suspense 없이 비동기 로드 — fallback 텍스처를 즉시 표시하고 이미지 로드 후 교체
 export function ImageCoverMaterial({
-  src, attach, rotation, roughness = 0.42, envMapIntensity = 0.32, fallback, onLoad,
+  src, attach, rotation, fallback, onLoad,
 }: {
   src: string
   attach: string
   rotation?: number
-  roughness?: number
-  envMapIntensity?: number
   fallback?: THREE.Texture | null
   onLoad?: () => void
 }) {
@@ -109,14 +107,11 @@ export function ImageCoverMaterial({
 
   const activeTex = tex ?? fallback ?? null
   return (
-    <meshStandardMaterial
+    <meshLambertMaterial
       attach={attach}
       map={activeTex}
       normalMap={normalMap}
       normalScale={[0.35, 0.35]}
-      roughness={roughness}
-      metalness={0}
-      envMapIntensity={envMapIntensity}
     />
   )
 }

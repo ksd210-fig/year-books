@@ -270,14 +270,14 @@ export function Book({
         <primitive object={coverGeometry} attach="geometry" />
         <primitive object={sharedPageEdgeMat} attach="material-0" />
         {book.spine
-          ? <ImageCoverMaterial attach="material-1" src={book.spine} rotation={Math.PI / 2} roughness={0.4} envMapIntensity={0.32} fallback={spineTex} />
-          : <meshStandardMaterial attach="material-1" map={spineTex} normalMap={clothNormal} normalScale={[0.35, 0.35]} roughness={0.46} metalness={0} envMapIntensity={0.28} />}
+          ? <ImageCoverMaterial attach="material-1" src={book.spine} rotation={Math.PI / 2} fallback={spineTex} />
+          : <meshLambertMaterial attach="material-1" map={spineTex} normalMap={clothNormal} normalScale={[0.35, 0.35]} />}
         {book.cover
-          ? <ImageCoverMaterial attach="material-2" src={book.cover} roughness={0.38} envMapIntensity={0.36} fallback={coverTex} onLoad={onCoverLoad} />
-          : <meshStandardMaterial attach="material-2" map={coverTex} normalMap={clothNormal} normalScale={[0.35, 0.35]} roughness={0.38} metalness={0} envMapIntensity={0.34} />}
+          ? <ImageCoverMaterial attach="material-2" src={book.cover} fallback={coverTex} onLoad={onCoverLoad} />
+          : <meshLambertMaterial attach="material-2" map={coverTex} normalMap={clothNormal} normalScale={[0.35, 0.35]} />}
         {book.back
-          ? <ImageCoverMaterial attach="material-3" src={book.back} rotation={Math.PI} roughness={0.44} envMapIntensity={0.28} fallback={backFallbackTex} />
-          : <meshStandardMaterial attach="material-3" color={edge.clone().multiplyScalar(0.62)} roughness={0.74} metalness={0} envMapIntensity={0.12} />}
+          ? <ImageCoverMaterial attach="material-3" src={book.back} rotation={Math.PI} fallback={backFallbackTex} />
+          : <meshLambertMaterial attach="material-3" color={edge.clone().multiplyScalar(0.62)} />}
         <primitive object={sharedPageEdgeMat} attach="material-4" />
         <primitive object={sharedPageEdgeMat} attach="material-5" />
       </mesh>

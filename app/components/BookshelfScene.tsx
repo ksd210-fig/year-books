@@ -24,7 +24,7 @@ export function BookshelfScene({ books, onSelect, onScrollEl, selectedId, aboutP
   const snapCameraRef = useRef(false)
   return (
     <Canvas
-      dpr={isMobile ? 1 : [1, 2]}
+      dpr={isMobile ? [1, 1.5] : [1, 2]}
       gl={{ antialias: true, alpha: true, powerPreference: 'high-performance', stencil: false }}
       performance={{ min: 0.5 }}
       onCreated={({ gl, scene }) => { gl.setClearColor(0x000000, 0); scene.background = null; }}
