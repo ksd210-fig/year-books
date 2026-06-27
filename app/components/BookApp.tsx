@@ -82,9 +82,10 @@ const EXTRA_PAGES = 1.0
 const SCENE_Y_OFFSETS = computeYOffsets(SCENE_BOOKS)
 
 function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768)
+  const [isMobile, setIsMobile] = useState(false)
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
+    check()
     window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
   }, [])
@@ -542,47 +543,40 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
-          padding: isMobile ? '0 28px' : '0 max(48px, 8vw)',
+          padding: isMobile
+            ? '0 28px'
+            : '0 max(48px, 8vw)',
           pointerEvents: 'none',
           touchAction: 'none',
         }}>
-        <div style={{
-          fontSize: '0.7rem', letterSpacing: '0.25em', color: '#1c1714',
-          opacity: 0.4, marginBottom: 32, fontFamily: SERIF,
-        }}>
-          FIG.1 BOOKS
-        </div>
         <p style={{
-          fontFamily: SERIF, fontSize: 'clamp(0.9rem, 1.6vw, 1.1rem)',
-          lineHeight: 1.85, color: '#1c1714', opacity: 0.82,
-          maxWidth: 600, margin: '0 0 16px',
-        }}>
-          Fig.1은 역사를 바탕으로 다양한 프로젝트를 만듭니다.
-        </p>
-        <p style={{
-          fontFamily: SERIF, fontSize: 'clamp(0.85rem, 1.5vw, 1rem)',
-          lineHeight: 1.85, color: '#1c1714', opacity: 0.6,
-          maxWidth: 600, margin: '0 0 16px',
+          fontFamily: SERIF, fontSize: 'clamp(0.82rem, 1.3vw, 0.93rem)',
+          lineHeight: 1.9, color: '#1c1714', opacity: 0.52,
+          maxWidth: 560, margin: '0 0 36px',
         }}>
           Year Book은 국내에서 출판된, 제목이 특정 연도인 책들을 한데 모아 책 목록 자체가 하나의 연표처럼 보이도록 구성한 프로젝트입니다. 우리는 특정한 해에 일어난 사건들이 오늘날의 세계를 어떻게 만들어왔는지를 탐구하는 책들을 선별했습니다.
         </p>
-        <p style={{
-          fontFamily: SERIF, fontSize: 'clamp(0.85rem, 1.5vw, 1rem)',
-          lineHeight: 1.75, color: '#1c1714', opacity: 0.45,
-          maxWidth: 600, margin: '0 0 36px',
-        }}>
-          Fig.1의 더 많은 프로젝트가 궁금하다면 아래 링크를 방문해 주세요.
-        </p>
-        <div style={{ display: 'flex', gap: 24 }}>
-          <a href="https://www.youtube.com/@fig1media" target="_blank" rel="noopener noreferrer"
-            style={{ fontFamily: SERIF, fontSize: '0.8rem', color: '#1c1714', opacity: 0.45, textDecoration: 'none', letterSpacing: '0.1em' }}>
-            YOUTUBE
-          </a>
-          <a href="https://tumblbug.com/fig1" target="_blank" rel="noopener noreferrer"
-            style={{ fontFamily: SERIF, fontSize: '0.8rem', color: '#1c1714', opacity: 0.45, textDecoration: 'none', letterSpacing: '0.1em' }}>
-            TUMBLBUG
-          </a>
-        </div>
+        <a
+          href="https://www.fig1.kr/project"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 10,
+            fontFamily: SERIF, fontSize: '0.82rem', fontWeight: 700,
+            letterSpacing: '0.08em', color: '#1c1714',
+            textDecoration: 'none', opacity: 0.65,
+            borderBottom: '1px solid rgba(28,23,20,0.3)',
+            paddingBottom: 4, width: 'fit-content',
+            transition: 'opacity 0.2s',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+          onMouseLeave={e => (e.currentTarget.style.opacity = '0.65')}
+        >
+          Fig.1 프로젝트 보기
+          <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
+            <path d="M1.27308 8.6948L6.64773 3.31482L6.63707 7.34714H8.38423V0.305237H1.34766L1.337 2.04174H5.37464L0 7.42171L1.27308 8.6948Z" fill="currentColor" />
+          </svg>
+        </a>
       </div>
     </div>
   )
