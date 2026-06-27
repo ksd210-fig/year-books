@@ -98,7 +98,6 @@ export function ImageCoverMaterial({
       loadedRef.current = loaded
       setTex(loaded)
       onLoad?.()
-      // 새 텍스처 세팅 후 이전 텍스처 해제 — 순서 중요 (반대로 하면 brief black 발생)
       prev?.dispose()
     })
     return () => {

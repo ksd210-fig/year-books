@@ -6,7 +6,7 @@ const projectRoot = dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: projectRoot,
-  allowedDevOrigins: ['192.168.200.158'],
+  allowedDevOrigins: ['172.16.241.101'],
   turbopack: { root: projectRoot },
   images: {
     remotePatterns: [

@@ -326,32 +326,21 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
 
       {/* ── 헤더 ── */}
       <header
-        onClick={selectedId ? () => setSelectedId(null) : undefined}
         style={{
           position: 'fixed', top: 0, left: 0, zIndex: 50,
           padding: '0 calc(42.5px + 1.75vw)',
           marginTop: 'calc(9px + 1vw)',
-          cursor: selectedId ? 'pointer' : 'default',
-          pointerEvents: 'auto',
+          pointerEvents: 'none',
           opacity: sceneReady ? 1 : 0,
           transform: sceneReady ? 'translateY(0)' : 'translateY(16px)',
           transition: 'opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1)',
           transitionDelay: '0.1s',
-          display: 'flex', alignItems: 'center', gap: 8,
         }}
       >
-        {selectedId && (
-          <span style={{
-            fontFamily: SERIF, fontSize: '1rem', fontWeight: 400,
-            color: 'rgba(255,255,255,0.45)', lineHeight: 1,
-            transition: 'color 0.4s',
-          }}>←</span>
-        )}
         <div style={{
           fontFamily: SERIF, fontWeight: 600, fontSize: '1.1rem',
-          color: selectedId ? '#ffffff' : '#c8b89a',
+          color: '#c8b89a',
           letterSpacing: '0.32px', lineHeight: 1.4,
-          transition: 'color 0.4s',
         }}>
           Fig.1 Books
         </div>
@@ -455,6 +444,19 @@ export default function BookApp({ initialId }: { initialId?: string | null }) {
       }}>
         {selectedBook && selectedPalette && (
           <>
+            <button
+              onClick={() => setSelectedId(null)}
+              style={{
+                alignSelf: 'flex-end',
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'currentColor', opacity: 0.5,
+                fontSize: 22, lineHeight: 1, padding: '0 0 16px 16px',
+                fontFamily: SERIF,
+                transition: 'opacity 0.2s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+              onMouseLeave={e => (e.currentTarget.style.opacity = '0.5')}
+            >×</button>
             <div style={{ fontSize: 'calc(17px + 0.5vw)', fontStyle: 'italic', fontWeight: 700, lineHeight: 1.22, marginBottom: 14 }}>
               {selectedBook.titleKo}
             </div>

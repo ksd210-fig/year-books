@@ -33,6 +33,7 @@ export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, sna
   const preloadRange = 18
 
   const [loadedSet, setLoadedSet] = useState<Set<number>>(() => {
+    if (isMobile) return new Set(books.map((_, i) => i))
     const centerLocal = 0.5 / 0.9
     const initial = new Set<number>()
     yOffsets.forEach((y, i) => { if (Math.abs(y - centerLocal) < initialLoadRange) initial.add(i) })
@@ -40,7 +41,7 @@ export function Stack({ books, onSelect, onScrollEl, selectedId, targetYRef, sna
   })
   const lastOffsetRef = useRef(-1)
 
-  const readyThreshold = Math.min(isMobile ? 8 : 4, books.length)
+  const readyThreshold = isMobile ? books.length : Math.min(4, books.length)
   const handleCoverLoad = useCallback(() => {
     if (booksReadyFiredRef.current) return
     coverLoadCountRef.current++
