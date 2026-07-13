@@ -8,6 +8,7 @@ import * as THREE from 'three'
 import type { Group } from 'three'
 import { type BookItem, bookDims } from '../../lib/bookUtils'
 import { ImageCoverMaterial, useClothNormalMap, useSharedPageEdgeMaterial } from './materials'
+import { withBase } from '../../basePath'
 
 export function Book({
   book, index, onSelect, isSelected, selectedIndex, onCoverLoad, isMobile,
@@ -37,7 +38,7 @@ export function Book({
   const hasDragged = useRef(false)
 
   // 페이지 바깥면 텍스처 — drei 캐시로 모든 Book 인스턴스가 공유
-  const sourcePageTex = useTexture('/textures/Book Seamless Texture.webp')
+  const sourcePageTex = useTexture(withBase('/textures/Book Seamless Texture.webp'))
   const pageTex = useMemo(() => {
     const tex = sourcePageTex.clone()
     tex.wrapS = THREE.RepeatWrapping

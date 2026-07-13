@@ -1,3 +1,5 @@
+import { withBase } from '@/app/basePath'
+
 export type YearBook = {
   id: string
   year: number
@@ -444,6 +446,15 @@ export const BOOKS: YearBook[] = [
     mmW: 152, mmH: 225, mmD: 48,
   },
 ]
+
+// cover/front/back/spine는 raw src로 쓰이는 정적 자산 경로라 basePath가 자동으로
+// 안 붙는다 — 배열 선언은 그대로 두고 여기 한 곳에서만 접두사를 붙인다.
+for (const book of BOOKS) {
+  if (book.cover) book.cover = withBase(book.cover)
+  if (book.front) book.front = withBase(book.front)
+  if (book.back) book.back = withBase(book.back)
+  if (book.spine) book.spine = withBase(book.spine)
+}
 
 export function getBooksByCentury(): Map<string, YearBook[]> {
   const map = new Map<string, YearBook[]>()
