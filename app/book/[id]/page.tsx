@@ -1,6 +1,9 @@
 import type { Metadata } from 'next'
 import { BOOKS } from '@/data/books'
 import BookApp from '../../components/BookApp'
+import { BASE_PATH } from '../../basePath'
+
+const SITE_URL = 'https://www.fig1.kr'
 
 export async function generateStaticParams() {
   return BOOKS.map(b => ({ id: b.id }))
@@ -15,7 +18,7 @@ export async function generateMetadata(
 
   const title = `${book.titleKo} — Fig.1 Books`
   const description = book.description
-  const url = `https://year-books-rose.vercel.app/book/${book.id}`
+  const url = `${SITE_URL}${BASE_PATH}/book/${book.id}`
   const coverImg = book.front ?? book.cover
 
   return {

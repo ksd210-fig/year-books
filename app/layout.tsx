@@ -1,7 +1,11 @@
 import type { Metadata } from 'next'
 import { EB_Garamond } from 'next/font/google'
 import { BOOKS } from '@/data/books'
+import { BASE_PATH } from './basePath'
 import './globals.css'
+
+const SITE_URL = 'https://www.fig1.kr'
+const CANONICAL_URL = `${SITE_URL}${BASE_PATH}`
 
 const ebGaramond = EB_Garamond({
   subsets: ['latin'],
@@ -13,11 +17,11 @@ const ebGaramond = EB_Garamond({
 export const metadata: Metadata = {
   title: '연도의 책들 — Fig.1',
   description: '연도가 제목인 책들의 아카이브. 역사의 결정적 순간을 담은 책들을 모았습니다.',
-  metadataBase: new URL('https://year-books-rose.vercel.app'),
+  metadataBase: new URL(SITE_URL),
   openGraph: {
     title: '연도의 책들 — Fig.1',
     description: '연도가 제목인 책들의 아카이브. 역사의 결정적 순간을 담은 책들을 모았습니다.',
-    url: 'https://year-books-rose.vercel.app',
+    url: CANONICAL_URL,
     siteName: 'Fig.1',
     locale: 'ko_KR',
     type: 'website',
@@ -34,7 +38,7 @@ const jsonLd = {
   '@type': 'CollectionPage',
   name: '연도의 책들 — Fig.1',
   description: '연도가 제목인 책들의 아카이브. 역사의 결정적 순간을 담은 책들을 모았습니다.',
-  url: 'https://year-books-rose.vercel.app',
+  url: CANONICAL_URL,
   mainEntity: {
     '@type': 'ItemList',
     itemListElement: BOOKS.map((book, i) => ({

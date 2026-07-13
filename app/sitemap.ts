@@ -1,7 +1,8 @@
 import type { MetadataRoute } from 'next'
 import { BOOKS } from '@/data/books'
+import { BASE_PATH } from './basePath'
 
-const BASE = 'https://year-books-rose.vercel.app'
+const BASE = `https://www.fig1.kr${BASE_PATH}`
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
